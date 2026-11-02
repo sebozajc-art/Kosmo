@@ -225,6 +225,29 @@ body.viewer .panel{max-height:34vh}
 .mi .r{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
 .mi .r.warn{color:#1a0d08;background:var(--warn);border-radius:8px;padding:2px 8px;font-weight:700}
 .mi .r.on{color:var(--ok)}
+.tk-add{display:flex;flex-direction:column;gap:10px;border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:12px}
+.tk-add input[type=text]{border:1px solid var(--hair);background:var(--solid);border-radius:10px;padding:10px 12px;font-size:15px;min-width:0}
+.tk-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tk-row input[type=date],.tk-row select,.tk-row input.as{border:1px solid var(--hair);background:var(--solid);border-radius:10px;padding:8px 10px;font-size:14px;min-width:0;flex:1}
+.tk-row label{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tk-row label input{width:18px;height:18px;accent-color:var(--warn)}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick .btn{padding:6px 10px;font-size:12px}
+.tk-g{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:6px 0 2px}
+.tk-g.over{color:var(--warn)}
+.tk{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--hair)}
+.tk .ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);background:none;cursor:pointer;display:grid;place-items:center;color:#fff;padding:0}
+.tk .ck.on{background:var(--ok);border-color:var(--ok)}
+.tk .ck svg{width:13px;height:13px}
+.tk .t{min-width:0} .tk .t b{font-weight:600;overflow-wrap:anywhere} .tk.done .t b{text-decoration:line-through;color:var(--muted)}
+.tk .t small{display:block;color:var(--muted);font-size:12px;margin-top:2px;overflow-wrap:anywhere}
+.tk .due{font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap;text-align:right}
+.tk .due.over{color:var(--warn);font-weight:700} .tk .due.today{color:var(--hit-2);font-weight:700}
+.tk .urg{display:inline-block;background:var(--warn);color:#1a0d08;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
+.tk .del{background:none;border:0;color:var(--faint);cursor:pointer;font-size:12px;padding:4px 0}
+.tk .del.armed{color:var(--warn)}
+.taskstrip{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--muted)}
+.taskstrip b{color:var(--ink)} .taskstrip .over{color:var(--warn);font-weight:700}
 .news{display:flex;flex-direction:column;gap:12px}
 .news div{border-left:3px solid var(--hit);padding-left:12px} .news b{display:block} .news span{font-size:13px;color:var(--muted)}
 .vfoot{font-size:12px;color:var(--faint);text-align:center}
@@ -322,6 +345,7 @@ html{padding-top:env(safe-area-inset-top,0px)}
       <div class="status" id="status"></div>
     </div>
 
+    <button type="button" class="taskstrip" id="taskStrip" hidden></button>
     <div class="card" id="card"></div>
 
     <section class="recuts" id="recuts" hidden>
@@ -366,10 +390,27 @@ html{padding-top:env(safe-area-inset-top,0px)}
   </div>
 </div>
 
+<div class="sheet" id="tasksSheet" hidden>
+  <div class="sheet-in">
+    <h3>Opravila</h3>
+    <form class="tk-add" id="tkForm">
+      <input type="text" id="tkTitle" placeholder="Kaj je treba narediti? npr. Razrez otok – stanovanje mama" maxlength="140" required aria-label="Opravilo">
+      <div class="quick" id="tkQuick"><button type="button" class="btn" data-d="0">Danes</button><button type="button" class="btn" data-d="1">Jutri</button><button type="button" class="btn" data-d="fri">Ta petek</button><button type="button" class="btn" data-d="7">Čez teden</button><button type="button" class="btn" data-d="">Brez roka</button></div>
+      <div class="tk-row"><input type="date" id="tkDue" aria-label="Rok"><label><input type="checkbox" id="tkUrgent">Nujno</label></div>
+      <div class="tk-row"><select id="tkProj" aria-label="Projekt"></select><input class="as" id="tkWho" placeholder="Kdo (neobvezno)" maxlength="40" aria-label="Kdo"></div>
+      <div class="sheet-actions" style="justify-content:flex-start"><button class="btn primary" type="submit">Dodaj opravilo</button><span class="status" id="tkMsg"></span></div>
+    </form>
+    <label class="check"><input type="checkbox" id="tkShowDone">Pokaži opravljena</label>
+    <div id="tkList"></div>
+    <div class="sheet-actions"><button class="btn ghost" type="button" id="tkClose">Zapri</button></div>
+  </div>
+</div>
+
 <div class="sheet" id="newsSheet" hidden>
   <div class="sheet-in">
     <h3>Kaj je novega</h3>
     <div class="news">
+      <div><b>Opravila z rokom</b><span>Kaj je treba narediti in do kdaj, z oznako nujno in kdo naj naredi. Zamujena so označena rdeče.</span></div>
       <div><b>Meni</b><span>Vse na enem mestu: projekti, razrez, montaža, deljenje in delavnica.</span></div>
       <div><b>Povezava za stranko</b><span>Projekt deliš s stranko, ki si kuhinjo ogleda v 3D brez prijave.</span></div>
       <div><b>Številke omaric za montažo</b><span>Omarice so oštevilčene v vrstnem redu postavitve. Ob skenu vidiš, v katero omarico gre kos.</span></div>
@@ -1110,12 +1151,105 @@ $("#viewMode").addEventListener("click",()=>{
 });
 syncViewBtn();
 
+// ---------- opravila
+let tasks = [], tasksErr = "";
+const CHK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const dayStr = d => { const x = new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); };
+const todayStr = () => dayStr(new Date());
+function dueInfo(t){
+  if (!t.due) return {cls:"", txt:"brez roka", grp:4};
+  const today = new Date(todayStr()), d = new Date(t.due), diff = Math.round((d-today)/864e5);
+  const wd = ["ned","pon","tor","sre","čet","pet","sob"][d.getDay()];
+  if (diff < 0) return {cls:"over", txt:`zamuja ${-diff} ${-diff===1?"dan":-diff===2?"dneva":-diff<5?"dni":"dni"}`, grp:0};
+  if (diff === 0) return {cls:"today", txt:"danes", grp:1};
+  if (diff === 1) return {cls:"", txt:"jutri", grp:2};
+  if (diff < 7) return {cls:"", txt:`${wd} ${d.getDate()}. ${d.getMonth()+1}.`, grp:2};
+  return {cls:"", txt:`${d.getDate()}. ${d.getMonth()+1}. ${d.getFullYear()!==today.getFullYear()?d.getFullYear():""}`.trim(), grp:3};
+}
+async function loadTasks(){
+  if (VIEWER) return;
+  try{ tasks = await store.listTasks(); tasksErr = ""; }
+  catch(e){ tasks = []; tasksErr = /relation|does not exist|schema cache/i.test(e.message||"") ? "Opravila v bazi še niso pripravljena (zaženi posodobitev-4.sql)." : "Opravil ni bilo mogoče naložiti."; }
+  renderTasks(); renderTaskStrip(); try{ updateBadge(); }catch(e){}
+}
+function openTasksCount(){ const t = todayStr(); return tasks.filter(x=>!x.done && x.due && x.due <= t).length; }
+function renderTaskStrip(){
+  const el = $("#taskStrip"); if (!el) return;
+  const open = tasks.filter(t=>!t.done); if (!open.length || VIEWER){ el.hidden = true; return; }
+  const t = todayStr(), over = open.filter(x=>x.due && x.due < t).length, today = open.filter(x=>x.due===t).length, urg = open.filter(x=>x.urgent).length;
+  const bits = [over && `<span class="over">${over} zamuja</span>`, today && `<b>${today} danes</b>`, urg && `${urg} nujno`].filter(Boolean);
+  el.innerHTML = `<span style="flex:1">Opravila: ${bits.length ? bits.join(" · ") : `<b>${open.length}</b> odprtih`}</span><span>›</span>`;
+  el.hidden = false;
+}
+function renderTasks(){
+  const list = $("#tkList"); if (!list) return;
+  if (tasksErr){ list.innerHTML = `<div class="status err">${esc(tasksErr)}</div>`; return; }
+  const showDone = $("#tkShowDone").checked;
+  const items = tasks.filter(t=>showDone || !t.done).map(t=>({t, d:dueInfo(t)}))
+    .sort((a,b)=>(a.t.done-b.t.done) || (a.d.grp-b.d.grp) || ((b.t.urgent?1:0)-(a.t.urgent?1:0)) || String(a.t.due||"").localeCompare(String(b.t.due||"")));
+  if (!items.length){ list.innerHTML = `<div class="empty-msg" style="padding:8px 0">Ni odprtih opravil.</div>`; return; }
+  const names = ["Zamujeno","Danes","Ta teden","Kasneje","Brez roka"]; let g = -1, h = "";
+  for (const {t,d} of items){
+    const grp = t.done ? 9 : d.grp;
+    if (grp !== g){ g = grp; h += `<div class="tk-g${grp===0?" over":""}">${grp===9?"Opravljeno":names[grp]}</div>`; }
+    const proj = t.project_id && projects.find(p=>p.id===t.project_id);
+    const sub = [proj && proj.name, t.assignee && "👤 "+t.assignee, t.note].filter(Boolean).map(esc).join(" · ");
+    h += `<div class="tk${t.done?" done":""}" data-id="${esc(t.id)}"><button type="button" class="ck${t.done?" on":""}" data-ck aria-label="${t.done?"Označi kot neopravljeno":"Označi kot opravljeno"}">${t.done?CHK:""}</button>
+      <div class="t"><b>${t.urgent&&!t.done?'<span class="urg">nujno</span>':""}${esc(t.title)}</b>${sub?`<small>${sub}</small>`:""}</div>
+      <div><div class="due ${t.done?"":d.cls}">${esc(d.txt)}</div><button type="button" class="del" data-del>Izbriši</button></div></div>`;
+  }
+  list.innerHTML = h;
+}
+function setDue(v){
+  const d = new Date();
+  if (v===""){ $("#tkDue").value = ""; }
+  else if (v==="fri"){ const add = (5 - d.getDay() + 7) % 7; d.setDate(d.getDate()+add); $("#tkDue").value = dayStr(d); }
+  else { d.setDate(d.getDate()+Number(v)); $("#tkDue").value = dayStr(d); }
+  $("#tkQuick").querySelectorAll(".btn").forEach(b=>b.classList.toggle("primary", b.dataset.d===v));
+}
+function openTasks(){
+  $("#tasksSheet").hidden = false; $("#tkMsg").textContent = "";
+  $("#tkProj").innerHTML = `<option value="">Brez projekta</option>` + projects.filter(p=>p.saved).map(p=>`<option value="${esc(p.id)}"${p===current?" selected":""}>${esc(p.name)}</option>`).join("");
+  if (!$("#tkDue").value) setDue("1");
+  renderTasks(); loadTasks();
+}
+$("#tkQuick").addEventListener("click",e=>{ const b = e.target.closest("[data-d]"); b && setDue(b.dataset.d); });
+$("#tkDue").addEventListener("change",()=>$("#tkQuick").querySelectorAll(".btn").forEach(b=>b.classList.remove("primary")));
+$("#tkShowDone").addEventListener("change",renderTasks);
+$("#tkClose").addEventListener("click",()=>$("#tasksSheet").hidden = true);
+$("#taskStrip").addEventListener("click",openTasks);
+$("#tkForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const title = $("#tkTitle").value.trim(); if (!title) return;
+  const t = {title, due: $("#tkDue").value || null, urgent: $("#tkUrgent").checked, project_id: $("#tkProj").value || null, assignee: $("#tkWho").value.trim() || null, created_by: myName || null};
+  const btn = e.submitter; btn && (btn.disabled = true); $("#tkMsg").textContent = "Shranjujem …"; $("#tkMsg").className = "status";
+  try{ await store.addTask(t); $("#tkTitle").value = ""; $("#tkUrgent").checked = false; $("#tkWho").value = ""; $("#tkMsg").textContent = "Dodano"; $("#tkMsg").className = "status ok"; await loadTasks(); }
+  catch(err){ $("#tkMsg").textContent = /relation|does not exist|schema cache/i.test(err.message||"") ? "Opravila v bazi še niso pripravljena (zaženi posodobitev-4.sql)." : "Ni bilo mogoče shraniti: " + (err.message||err); $("#tkMsg").className = "status err"; }
+  finally{ btn && (btn.disabled = false); }
+});
+$("#tkList").addEventListener("click",async e=>{
+  const row = e.target.closest(".tk"); if (!row) return; const t = tasks.find(x=>String(x.id)===row.dataset.id); if (!t) return;
+  if (e.target.closest("[data-ck]")){
+    const done = !t.done; t.done = done; t.done_at = done ? Date.now() : null; renderTasks(); renderTaskStrip(); updateBadge();
+    if (done){ beep(true); }
+    try{ await store.updateTask(t.id,{done, done_at:t.done_at}); }catch(_){ toast("Ni bilo mogoče shraniti"); loadTasks(); }
+    return;
+  }
+  const del = e.target.closest("[data-del]");
+  if (del){
+    if (!del.classList.contains("armed")){ del.classList.add("armed"); del.textContent = "Res?"; setTimeout(()=>{ del.classList.remove("armed"); del.textContent = "Izbriši"; },3000); return; }
+    tasks = tasks.filter(x=>x!==t); renderTasks(); renderTaskStrip(); updateBadge();
+    try{ await store.deleteTask(t.id); }catch(_){ toast("Ni bilo mogoče izbrisati"); loadTasks(); }
+  }
+});
+
 // ---------- meni
-const NEWS_VER = "2026-11-02c";
+const NEWS_VER = "2026-11-02d";
 function renderMenu(){
   const shared = current && current.saved && cloud;
   const items = [
     ["projects", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>', "Projekti", "Odpri, uvozi ali izbriši projekt", ""],
+    ["tasks", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18M8 15l2.5 2.5L16 13"/></svg>', "Opravila", tasks.filter(t=>!t.done).length ? `${tasks.filter(t=>!t.done).length} odprtih` : "Kaj je treba narediti in do kdaj", openTasksCount() ? `<span class="r warn">${openTasksCount()}</span>` : ""],
     ["recuts", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg>', "Za ponoven razrez", recuts.length ? "Seznam poškodovanih kosov" : "Ni kosov za razrez", recuts.length ? `<span class="r warn">${recuts.length}</span>` : ""],
     ["missing", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>', "Skenirano", "Napredek projekta", `<span class="r">${current.parts.filter(q=>scannedSet().has(q.code)).length} / ${current.parts.length}</span>`],
     ["montage", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8l2-1v10M9.5 17h5"/></svg>', "Številke omaric", "Vrstni red montaže v 3D", `<span class="r${montage?" on":""}">${montage?"vklop":"izklop"}</span>`],
@@ -1128,7 +1262,7 @@ function renderMenu(){
   $("#menuSub").textContent = current ? `Projekt: ${current.name}` : "";
 }
 function newsUnseen(){ try{ return localStorage.getItem("kosmo.news") !== NEWS_VER; }catch(e){ return false; } }
-function updateBadge(){ const n = recuts.length, b = $("#menuBadge"); if (!b) return;
+function updateBadge(){ const n = recuts.length + openTasksCount(), b = $("#menuBadge"); if (!b) return;
   b.hidden = !(n || newsUnseen()); b.textContent = n ? String(n) : "!"; }
 $("#menuBtn").addEventListener("click",()=>{ renderMenu(); $("#menuSheet").hidden = false; });
 $("#menuClose").addEventListener("click",()=>$("#menuSheet").hidden = true);
@@ -1142,6 +1276,7 @@ $("#menuSheet").addEventListener("click",e=>{
   else if (k==="recuts"){ if (!recuts.length){ toast("Ni kosov za ponoven razrez"); return; } const panel = document.querySelector(".panel"), box = $("#recuts"); panel.scrollTo({top: box.offsetTop - 12}); }
   else if (k==="missing"){ const panel = document.querySelector(".panel"), w = document.querySelector(".listwrap"); panel.scrollTo({top: w.offsetTop - 12}); }
   else if (k==="share"){ openShare(current); }
+  else if (k==="tasks"){ openTasks(); }
   else if (k==="news"){ $("#newsSheet").hidden = false; try{ localStorage.setItem("kosmo.news", NEWS_VER); }catch(_){} updateBadge(); }
 });
 $("#newsClose").addEventListener("click",()=>$("#newsSheet").hidden = true);
@@ -1223,8 +1358,8 @@ let sb = null, unsubScans = null, WS = null;
 
 const idb = (()=>{ // majhna lokalna shramba za način brez oblaka
   let dbp = null;
-  const open = () => dbp || (dbp = new Promise((res,rej)=>{ const r = indexedDB.open("kjejekos",2);
-    r.onupgradeneeded = () => { const d = r.result; ["projects","scans","recuts"].forEach(n=>{ if (!d.objectStoreNames.contains(n)) d.createObjectStore(n); }); };
+  const open = () => dbp || (dbp = new Promise((res,rej)=>{ const r = indexedDB.open("kjejekos",3);
+    r.onupgradeneeded = () => { const d = r.result; ["projects","scans","recuts","tasks"].forEach(n=>{ if (!d.objectStoreNames.contains(n)) d.createObjectStore(n); }); };
     r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
   const tx = async (store,mode,fn) => { const db = await open(); return new Promise((res,rej)=>{ const t = db.transaction(store,mode); const st = t.objectStore(store); const out = fn(st); t.oncomplete = () => res(out instanceof IDBRequest ? out.result : out); t.onerror = () => rej(t.error); }); };
   return {
@@ -1285,9 +1420,26 @@ const store = {
     if (cloud){ const {error} = await sb.from("recuts").update({done:true}).eq("id",id); if (error) throw error; return; }
     const all = (await idb.get("recuts",pid)) || []; const x = all.find(r=>r.id===id); if (x) x.done = true; await idb.put("recuts",pid,all);
   },
-  subscribe(onProjects,onScans,onRecuts){ // spremembe z drugih naprav
+  async listTasks(){
+    if (cloud){ const {data,error} = await sb.from("tasks").select("*").eq("workshop_id",WS).order("due",{ascending:true,nullsFirst:false}).limit(500); if (error) throw error; return data; }
+    return (await idb.get("tasks","all")) || [];
+  },
+  async addTask(t){
+    if (cloud){ const {error} = await sb.from("tasks").insert({...t, workshop_id:WS}); if (error) throw error; return; }
+    const all = (await idb.get("tasks","all")) || []; all.push({...t, id:"t"+Date.now().toString(36), created_at:Date.now(), done:false}); await idb.put("tasks","all",all);
+  },
+  async updateTask(id,patch){
+    if (cloud){ const {error} = await sb.from("tasks").update(patch).eq("id",id); if (error) throw error; return; }
+    const all = (await idb.get("tasks","all")) || []; const x = all.find(t=>t.id===id); if (x) Object.assign(x,patch); await idb.put("tasks","all",all);
+  },
+  async deleteTask(id){
+    if (cloud){ const {error} = await sb.from("tasks").delete().eq("id",id); if (error) throw error; return; }
+    const all = ((await idb.get("tasks","all")) || []).filter(t=>t.id!==id); await idb.put("tasks","all",all);
+  },
+  subscribe(onProjects,onScans,onRecuts,onTasks){ // spremembe z drugih naprav
     if (!cloud) return;
     sb.channel("kjejekos")
+      .on("postgres_changes",{event:"*",schema:"public",table:"tasks",filter:"workshop_id=eq."+WS},()=>onTasks && onTasks())
       .on("postgres_changes",{event:"*",schema:"public",table:"recuts",filter:"workshop_id=eq."+WS},p=>onRecuts && onRecuts((p.new&&p.new.project_id)||(p.old&&p.old.project_id)))
       .on("postgres_changes",{event:"*",schema:"public",table:"projects",filter:"workshop_id=eq."+WS},()=>onProjects())
       .on("postgres_changes",{event:"*",schema:"public",table:"scans",filter:"workshop_id=eq."+WS},p=>onScans((p.new&&p.new.project_id)||(p.old&&p.old.project_id)))
@@ -1782,11 +1934,12 @@ $("#listhead-clear").addEventListener("click",e=>{ const b=e.currentTarget;
     }
     WS = m.workshop_id; showWsInfo(m.workshops, m.role);
     const sub = document.querySelector(".brand small"); if (sub) sub.textContent = m.workshops.name;
-    store.subscribe(()=>refreshProjects(), pid=>{ if (pid===current.id) loadScans(current); }, pid=>{ if (!pid || pid===current.id) loadRecuts(current); });
+    store.subscribe(()=>refreshProjects(), pid=>{ if (pid===current.id) loadScans(current); }, pid=>{ if (!pid || pid===current.id) loadRecuts(current); }, ()=>loadTasks());
   }
   if (!cloud){ try{ myName = localStorage.getItem("kosmo.name") || ""; }catch(e){} }
   let last = null; try{ last = localStorage.getItem("kjejekos.last"); }catch(e){}
   await refreshProjects(last && last!=="demo" ? last : null);
+  loadTasks();
 })();
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
 

@@ -8,7 +8,7 @@ Brez tega koraka aplikacija deluje, a vsaka naprava hrani projekte zase.
 
 1. Odpri **supabase.com** in ustvari račun.
 2. **New project**: ime `kje-je-kos`, regija **Frankfurt (eu-central-1)**, izberi geslo baze in ga shrani.
-3. Levo **SQL Editor** → **New query**: prilepi celotno vsebino datoteke `setup.sql` in klikni **Run**. Na enak način nato zaženi še `posodobitev-1.sql` in `posodobitev-2.sql` in `posodobitev-3.sql`.
+3. Levo **SQL Editor** → **New query**: prilepi celotno vsebino datoteke `setup.sql` in klikni **Run**. Na enak način nato zaženi še `posodobitev-1.sql` in `posodobitev-2.sql` , `posodobitev-3.sql` in `posodobitev-4.sql`.
 4. Levo **Authentication** → **Users** → **Add user** → **Create new user**: vpiši e-naslov in geslo za delavnico ter obkljukaj **Auto Confirm User**. S tem računom se boste prijavljali na vseh napravah.
    Nato v **SQL Editorju** poveži račun z delavnico: na dnu `setup.sql` je razdelek **Nova delavnica**. Kopiraj tiste tri vrstice brez znakov `--`, vpiši ime delavnice in e-naslov ter klikni **Run**. Enako boš kasneje naredil za vsako novo stranko.
 5. **Zakleni nove prijave** (pomembno): **Authentication** → **Sign In / Providers** → izklopi **Allow new users to sign up**. Tako si nihče ne more sam ustvariti računa in priti do vaših projektov.
