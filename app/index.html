@@ -248,6 +248,31 @@ body.viewer .panel{max-height:34vh}
 .tk .del.armed{color:var(--warn)}
 .filterchip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;text-align:left;border:1px solid color-mix(in srgb,var(--warn) 55%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent);border-radius:12px;padding:9px 12px;margin-bottom:10px;cursor:pointer;font-size:13px;color:var(--muted)}
 .filterchip b{color:var(--ink)} .filterchip span{margin-left:auto;color:var(--warn);font-weight:600}
+.sheet-in.big{max-width:980px;width:100%;min-height:94%;}
+@media (min-width:600px){.sheet-in.big{min-height:90%}}
+.tabs{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--hair);border-radius:12px;padding:4px;align-self:flex-start}
+.tabs button{border:0;background:none;border-radius:9px;padding:8px 16px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted)}
+.tabs button.on{background:var(--hit);color:#fff}
+.cal{display:flex;flex-direction:column;gap:8px}
+.cal-h{display:flex;align-items:center;gap:8px}
+.cal-h h4{margin:0 auto;font-family:var(--f-display);font-weight:700;font-stretch:112%;font-size:20px;text-transform:capitalize}
+.cal-h .btn{padding:8px 14px;font-size:16px}
+.cal-w,.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-w div{font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:center;padding:2px 0}
+.cal-d{min-height:clamp(58px,11vh,118px);border:1px solid var(--hair);background:var(--surface-2);border-radius:10px;padding:5px;display:flex;flex-direction:column;gap:3px;cursor:pointer;text-align:left;min-width:0;overflow:hidden;color:var(--ink)}
+.cal-d.out{opacity:.35}
+.cal-d.today{border-color:var(--hit);box-shadow:inset 0 0 0 1px var(--hit)}
+.cal-d.sel{background:var(--hit-soft);border-color:var(--hit-2)}
+.cal-d .n{font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--muted)}
+.cal-d.today .n{color:var(--hit-2)}
+.cal-d.we .n{color:var(--faint)}
+.cal-d .ev{font-size:11px;line-height:1.25;border-radius:5px;padding:2px 4px;background:rgba(255,255,255,.07);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-d .ev.urg{background:var(--warn);color:#1a0d08;font-weight:600}
+.cal-d .ev.over{background:color-mix(in srgb,var(--warn) 30%,transparent)}
+.cal-d .ev.done{text-decoration:line-through;opacity:.5}
+.cal-d .more{font-size:10.5px;color:var(--muted)}
+@media (max-width:520px){.cal-d{min-height:54px;padding:4px}.cal-d .ev{font-size:0;height:6px;padding:0;border-radius:3px;background:var(--muted)}.cal-d .ev.urg{background:var(--warn)}.cal-d .ev.over{background:var(--warn);opacity:.6}.cal-d .more{font-size:9.5px}}
+.cal-day{font-weight:700;font-size:15px;margin-top:4px}
 .taskstrip{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--muted)}
 .taskstrip b{color:var(--ink)} .taskstrip .over{color:var(--warn);font-weight:700}
 .news{display:flex;flex-direction:column;gap:12px}
@@ -394,8 +419,15 @@ html{padding-top:env(safe-area-inset-top,0px)}
 </div>
 
 <div class="sheet" id="tasksSheet" hidden>
-  <div class="sheet-in">
-    <h3>Opravila</h3>
+  <div class="sheet-in" id="tasksIn">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h3 style="margin-right:auto">Opravila</h3>
+      <div class="tabs" role="tablist"><button type="button" role="tab" data-tab="list" class="on" aria-selected="true">Seznam</button><button type="button" role="tab" data-tab="cal" aria-selected="false">Koledar</button></div></div>
+    <div class="cal" id="tkCal" hidden>
+      <div class="cal-h"><button type="button" class="btn" id="calPrev" aria-label="Prejšnji mesec">‹</button><h4 id="calTitle"></h4><button type="button" class="btn ghost" id="calToday" style="font-size:13px">Danes</button><button type="button" class="btn" id="calNext" aria-label="Naslednji mesec">›</button></div>
+      <div class="cal-w"><div>Pon</div><div>Tor</div><div>Sre</div><div>Čet</div><div>Pet</div><div>Sob</div><div>Ned</div></div>
+      <div class="cal-g" id="calGrid"></div>
+      <div class="cal-day" id="calDayTitle"></div>
+    </div>
     <form class="tk-add" id="tkForm">
       <input type="text" id="tkTitle" placeholder="Kaj je treba narediti? npr. Razrez otok – stanovanje mama" maxlength="140" required aria-label="Opravilo">
       <div class="quick" id="tkQuick"><button type="button" class="btn" data-d="0">Danes</button><button type="button" class="btn" data-d="1">Jutri</button><button type="button" class="btn" data-d="fri">Ta petek</button><button type="button" class="btn" data-d="7">Čez teden</button><button type="button" class="btn" data-d="">Brez roka</button></div>
@@ -403,7 +435,7 @@ html{padding-top:env(safe-area-inset-top,0px)}
       <div class="tk-row"><select id="tkProj" aria-label="Projekt"></select><input class="as" id="tkWho" placeholder="Kdo (neobvezno)" maxlength="40" aria-label="Kdo"></div>
       <div class="sheet-actions" style="justify-content:flex-start"><button class="btn primary" type="submit">Dodaj opravilo</button><span class="status" id="tkMsg"></span></div>
     </form>
-    <label class="check"><input type="checkbox" id="tkShowDone">Pokaži opravljena</label>
+    <label class="check" id="tkShowDoneL"><input type="checkbox" id="tkShowDone">Pokaži opravljena</label>
     <div id="tkList"></div>
     <div class="sheet-actions"><button class="btn ghost" type="button" id="tkClose">Zapri</button></div>
   </div>
@@ -413,6 +445,7 @@ html{padding-top:env(safe-area-inset-top,0px)}
   <div class="sheet-in">
     <h3>Kaj je novega</h3>
     <div class="news">
+      <div><b>Koledar opravil</b><span>V Opravilih preklopiš na Koledar: cel mesec na velikem zaslonu, tap na dan pokaže in doda opravila za tisti dan.</span></div>
       <div><b>Filter za popravilo in neposkenirane</b><span>V meniju izbereš »Za popravilo« ali »Še ni skenirano«. Seznam in 3D pokažeta samo te kose.</span></div>
       <div><b>Prosojen pogled</b><span>Gumb s kocko zdaj naredi celo kuhinjo prosojno, da vidiš skozi omarice.</span></div>
       <div><b>Opravila z rokom</b><span>Kaj je treba narediti in do kdaj, z oznako nujno in kdo naj naredi. Zamujena so označena rdeče.</span></div>
@@ -1203,13 +1236,42 @@ function renderTaskStrip(){
   el.innerHTML = `<span style="flex:1">Opravila: ${bits.length ? bits.join(" · ") : `<b>${open.length}</b> odprtih`}</span><span>›</span>`;
   el.hidden = false;
 }
+let tkTab = "list", calMonth = null, calSel = null;
+function renderCal(){
+  if (!calMonth){ const d = new Date(); calMonth = new Date(d.getFullYear(), d.getMonth(), 1); }
+  $("#calTitle").textContent = calMonth.toLocaleDateString("sl-SI",{month:"long", year:"numeric"});
+  const first = new Date(calMonth), start = new Date(first); start.setDate(1 - ((first.getDay()+6)%7));
+  const t0 = todayStr(), byDay = {};
+  for (const t of tasks){ if (t.due) (byDay[t.due] = byDay[t.due] || []).push(t); }
+  let h = "";
+  for (let i=0;i<42;i++){
+    const d = new Date(start); d.setDate(start.getDate()+i); const ds = dayStr(d);
+    if (i>=35 && d.getMonth()!==calMonth.getMonth()) break;
+    const list = (byDay[ds]||[]).sort((a,b)=>(a.done-b.done)||((b.urgent?1:0)-(a.urgent?1:0)));
+    const cls = ["cal-d", d.getMonth()!==calMonth.getMonth()&&"out", ds===t0&&"today", ds===calSel&&"sel", (d.getDay()===0||d.getDay()===6)&&"we"].filter(Boolean).join(" ");
+    const ev = list.slice(0,3).map(t=>`<div class="ev${t.done?" done":t.urgent?" urg":(ds<t0?" over":"")}">${esc(t.title)}</div>`).join("");
+    h += `<button type="button" class="${cls}" data-day="${ds}" aria-label="${d.getDate()}. ${d.getMonth()+1}., ${list.length} opravil"><span class="n">${d.getDate()}</span>${ev}${list.length>3?`<span class="more">+${list.length-3}</span>`:""}</button>`;
+  }
+  $("#calGrid").innerHTML = h;
+  if (calSel){ const d = new Date(calSel); $("#calDayTitle").textContent = d.toLocaleDateString("sl-SI",{weekday:"long", day:"numeric", month:"long"}); }
+  else $("#calDayTitle").textContent = "Tapni dan za opravila tistega dne";
+}
+function setTkTab(tab){
+  tkTab = tab; const cal = tab==="cal";
+  $("#tasksIn").classList.toggle("big", cal);
+  $("#tkCal").hidden = !cal;
+  document.querySelectorAll("#tasksIn .tabs button").forEach(b=>{ const on = b.dataset.tab===tab; b.classList.toggle("on",on); b.setAttribute("aria-selected",String(on)); });
+  if (cal){ if (!calSel) calSel = todayStr(); $("#tkDue").value = calSel; renderCal(); }
+  renderTasks();
+}
 function renderTasks(){
   const list = $("#tkList"); if (!list) return;
   if (tasksErr){ list.innerHTML = `<div class="status err">${esc(tasksErr)}</div>`; return; }
-  const showDone = $("#tkShowDone").checked;
-  const items = tasks.filter(t=>showDone || !t.done).map(t=>({t, d:dueInfo(t)}))
+  if (tkTab==="cal") renderCal();
+  const showDone = $("#tkShowDone").checked || tkTab==="cal";
+  const items = tasks.filter(t=>showDone || !t.done).filter(t=>tkTab!=="cal" || t.due===calSel).map(t=>({t, d:dueInfo(t)}))
     .sort((a,b)=>(a.t.done-b.t.done) || (a.d.grp-b.d.grp) || ((b.t.urgent?1:0)-(a.t.urgent?1:0)) || String(a.t.due||"").localeCompare(String(b.t.due||"")));
-  if (!items.length){ list.innerHTML = `<div class="empty-msg" style="padding:8px 0">Ni odprtih opravil.</div>`; return; }
+  if (!items.length){ list.innerHTML = `<div class="empty-msg" style="padding:8px 0">${tkTab==="cal" ? "Ta dan ni opravil. Dodaj ga zgoraj." : "Ni odprtih opravil."}</div>`; return; }
   const names = ["Zamujeno","Danes","Ta teden","Kasneje","Brez roka"]; let g = -1, h = "";
   for (const {t,d} of items){
     const grp = t.done ? 9 : d.grp;
@@ -1233,11 +1295,18 @@ function openTasks(){
   $("#tasksSheet").hidden = false; $("#tkMsg").textContent = "";
   $("#tkProj").innerHTML = `<option value="">Brez projekta</option>` + projects.filter(p=>p.saved).map(p=>`<option value="${esc(p.id)}"${p===current?" selected":""}>${esc(p.name)}</option>`).join("");
   if (!$("#tkDue").value) setDue("1");
-  renderTasks(); loadTasks();
+  let tab = "list"; try{ tab = localStorage.getItem("kosmo.tktab") || "list"; }catch(e){}
+  setTkTab(tab); loadTasks();
 }
 $("#tkQuick").addEventListener("click",e=>{ const b = e.target.closest("[data-d]"); b && setDue(b.dataset.d); });
 $("#tkDue").addEventListener("change",()=>$("#tkQuick").querySelectorAll(".btn").forEach(b=>b.classList.remove("primary")));
 $("#tkShowDone").addEventListener("change",renderTasks);
+document.querySelectorAll("#tasksIn .tabs button").forEach(b=>b.addEventListener("click",()=>{ setTkTab(b.dataset.tab); try{ localStorage.setItem("kosmo.tktab", b.dataset.tab); }catch(e){} }));
+$("#calPrev").addEventListener("click",()=>{ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1); renderCal(); });
+$("#calNext").addEventListener("click",()=>{ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderCal(); });
+$("#calToday").addEventListener("click",()=>{ const d = new Date(); calMonth = new Date(d.getFullYear(), d.getMonth(), 1); calSel = todayStr(); $("#tkDue").value = calSel; renderTasks(); });
+$("#calGrid").addEventListener("click",e=>{ const c = e.target.closest("[data-day]"); if (!c) return; calSel = c.dataset.day; $("#tkDue").value = calSel;
+  $("#tkQuick").querySelectorAll(".btn").forEach(b=>b.classList.remove("primary")); renderTasks(); });
 $("#tkClose").addEventListener("click",()=>$("#tasksSheet").hidden = true);
 $("#taskStrip").addEventListener("click",openTasks);
 $("#tkForm").addEventListener("submit",async e=>{
@@ -1266,7 +1335,7 @@ $("#tkList").addEventListener("click",async e=>{
 });
 
 // ---------- meni
-const NEWS_VER = "2026-11-02e";
+const NEWS_VER = "2026-11-02f";
 function renderMenu(){
   const shared = current && current.saved && cloud;
   const items = [
