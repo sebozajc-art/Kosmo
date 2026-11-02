@@ -204,7 +204,30 @@ header{position:absolute;inset:0 0 auto;z-index:2;display:flex;align-items:cente
 .prow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:14px 0;border-bottom:1px solid var(--hair)}
 .prow b{font-weight:600;min-width:0;overflow-wrap:anywhere}
 .prow small{grid-column:1;color:var(--muted);font-size:12px}
-.prow .acts{grid-row:1 / span 2;grid-column:2;display:flex;gap:6px}
+.prow .acts{grid-row:1 / span 2;grid-column:2;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.prow .shared{color:var(--ok);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-left:6px}
+.sharebox{display:flex;gap:8px;align-items:center;border:1px solid var(--hair);background:var(--surface-2);border-radius:12px;padding:8px 8px 8px 12px}
+.sharebox code{flex:1;min-width:0;font-family:var(--f-mono);font-size:12px;overflow-wrap:anywhere;user-select:all}
+.mnum{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 6px;border-radius:7px;background:var(--hit);color:#fff;font-family:var(--f-mono);font-weight:700;font-size:12px;margin-right:8px}
+.group span.mnum{opacity:1;color:#fff;font-weight:700;letter-spacing:0}
+.group span.cat{opacity:1;font-size:10px;color:var(--faint);margin-left:6px;letter-spacing:.1em;font-weight:500}
+.scanby{font-size:12px;color:var(--muted)}
+body.viewer .scanrow,body.viewer #recuts,body.viewer #menuBtn,body.viewer .listwrap,body.viewer #openProjects,body.viewer .pill-select,body.viewer #resetView{display:none!important}
+body.viewer .panel{max-height:34vh}
+.iconbtn{position:relative}
+.badge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--warn);color:#1a0d08;font-size:11px;font-weight:700;display:grid;place-items:center;font-family:var(--f-mono)}
+.menu{display:flex;flex-direction:column;gap:6px}
+.mi{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:10px 12px;cursor:pointer;font-size:15px;font-weight:600;color:var(--ink)}
+.mi:hover{border-color:var(--muted)}
+.mi .ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--hit-soft);color:var(--hit-2)}
+.mi .ico svg{width:20px;height:20px}
+.mi small{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:2px}
+.mi .r{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.mi .r.warn{color:#1a0d08;background:var(--warn);border-radius:8px;padding:2px 8px;font-weight:700}
+.mi .r.on{color:var(--ok)}
+.news{display:flex;flex-direction:column;gap:12px}
+.news div{border-left:3px solid var(--hit);padding-left:12px} .news b{display:block} .news span{font-size:13px;color:var(--muted)}
+.vfoot{font-size:12px;color:var(--faint);text-align:center}
 .prow .acts .btn{padding:7px 12px;font-size:13px}
 .btn.danger{color:var(--warn)}
 .btn.danger.armed{background:var(--warn);color:#1a0d08;border-color:var(--warn)}
@@ -261,13 +284,17 @@ html{padding-top:env(safe-area-inset-top,0px)}
       <div class="mark" aria-hidden="true">K</div>
       <div class="brand">Kosmo<small>Mizarstvo Stajl</small></div>
       <div class="pill-select"><select id="project" aria-label="Projekt"></select></div>
-      <button class="iconbtn" id="openProjects" type="button" aria-label="Projekti" title="Projekti">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <button class="iconbtn" id="menuBtn" type="button" aria-label="Meni" title="Meni">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="badge" id="menuBadge" hidden></span>
       </button>
+      <button id="openProjects" type="button" hidden></button>
     </header>
     <div class="stage-tools">
       <button class="iconbtn" id="showAll" type="button" aria-label="Pokaži vse" title="Pokaži vse">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+      <button class="iconbtn" id="montage" type="button" aria-label="Številke omaric za montažo" title="Številke omaric (montaža)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8l2-1v10M9.5 17h5"/></svg>
       </button>
       <button class="iconbtn" id="viewMode" type="button" aria-label="Prosojen pogled" title="Prosojen / poln pogled" aria-pressed="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9" stroke-dasharray="2.5 2.5"/></svg>
@@ -302,7 +329,7 @@ html{padding-top:env(safe-area-inset-top,0px)}
       <div id="rcList"></div>
     </section>
 
-    <div>
+    <div class="listwrap">
       <div class="listhead">
         <h2>Kosi v projektu</h2>
         <span class="progress" id="progress"></span>
@@ -320,11 +347,51 @@ html{padding-top:env(safe-area-inset-top,0px)}
     <h3>Projekti</h3>
     <p id="projNote">Uvoženi projekti se shranijo in so vidni na vseh telefonih, ki odprejo to aplikacijo.</p>
     <div class="wsinfo" id="wsInfo" hidden></div>
+    <form class="manual" id="nameForm" hidden><input id="myName" placeholder="Tvoje ime (vidijo ga sodelavci pri skenih)" aria-label="Tvoje ime" maxlength="40"><button class="btn" type="submit">Shrani</button></form>
     <div id="projList"></div>
     <div class="sheet-actions">
       <button class="btn ghost" type="button" id="logout" hidden>Odjava</button>
       <button class="btn ghost" type="button" id="projClose">Zapri</button>
       <button class="btn primary" type="button" id="openImport">Uvozi nov projekt</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="menuSheet" hidden>
+  <div class="sheet-in">
+    <h3>Kosmo</h3>
+    <p id="menuSub"></p>
+    <nav class="menu" id="menuList"></nav>
+    <div class="sheet-actions"><button class="btn ghost" type="button" id="menuClose">Zapri</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="newsSheet" hidden>
+  <div class="sheet-in">
+    <h3>Kaj je novega</h3>
+    <div class="news">
+      <div><b>Meni</b><span>Vse na enem mestu: projekti, razrez, montaža, deljenje in delavnica.</span></div>
+      <div><b>Povezava za stranko</b><span>Projekt deliš s stranko, ki si kuhinjo ogleda v 3D brez prijave.</span></div>
+      <div><b>Številke omaric za montažo</b><span>Omarice so oštevilčene v vrstnem redu postavitve. Ob skenu vidiš, v katero omarico gre kos.</span></div>
+      <div><b>Kdo je skeniral</b><span>Pri kosu piše, kdo ga je poskeniral in kdaj. Ime nastaviš v meniju pod Moja delavnica.</span></div>
+      <div><b>Ponoven razrez</b><span>Poškodovan kos označiš z razlogom, opombo in fotografijo. Seznam kopiraš in pošlješ.</span></div>
+      <div><b>Hitrejše skeniranje</b><span>Pisk ob skenu, zaporedno skeniranje in manjši okvir kamere za eno kodo.</span></div>
+      <div><b>Omarica in vodila</b><span>Tap na omarico pokaže mere in vodila predalov (NL) od spodaj navzgor.</span></div>
+    </div>
+    <div class="sheet-actions"><button class="btn primary" type="button" id="newsClose">V redu</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="shareSheet" hidden>
+  <div class="sheet-in">
+    <h3>Povezava za stranko</h3>
+    <p id="shareText">Stranka si s to povezavo ogleda svojo kuhinjo v 3D. Prijava ni potrebna, urejati ne more ničesar.</p>
+    <div class="sharebox"><code id="shareUrl">…</code><button class="btn" type="button" id="shareCopy">Kopiraj</button></div>
+    <div class="status" id="shareMsg"></div>
+    <div class="sheet-actions">
+      <button class="btn danger" type="button" id="shareStop">Ukini povezavo</button>
+      <button class="btn ghost" type="button" id="shareClose">Zapri</button>
+      <button class="btn primary" type="button" id="shareSend">Pošlji …</button>
     </div>
   </div>
 </div>
@@ -514,6 +581,10 @@ let selected = null;
 let selEl = null;   // izbrana omarica (element); ob izbranem kosu je to njegova omarica
 let viewMode = (()=>{ try{ return localStorage.getItem("kosmo.view") || "xray"; }catch(e){ return "xray"; } })();
 const elKey = p => p ? String(p.el ?? p.element ?? "") : "";
+const VIEW_TOKEN = new URLSearchParams(location.search).get("ogled");
+const VIEWER = !!VIEW_TOKEN;
+let montage = false, myName = "", viewIntro = "";
+const scanInfo = new Map();   // projectId -> Map(code -> {by, at})
 const elParts = k => current.parts.filter(q=>elKey(q)===k);
 const scanned = new Map(); // projectId -> Set
 
@@ -562,7 +633,7 @@ function init3D(){
     if (!hit) return;
     const p = hit.object.userData.part;
     // prvi dotik izbere omarico, naslednji dotik v isti omarici izbere kos
-    if (selEl!=null && elKey(p)===selEl) select(p,{fly:false}); else selectEl(elKey(p));
+    if (!VIEWER && selEl!=null && elKey(p)===selEl) select(p,{fly:false}); else selectEl(elKey(p));
   });
   (function loop(){ requestAnimationFrame(loop);
     if (tween){ const k=Math.min(1,(performance.now()-tween.t0)/tween.dur), e=1-Math.pow(1-k,3);
@@ -689,6 +760,7 @@ function restyle(){
     }
   });
   if (selected && meshOf.has(selected)) addBands(meshOf.get(selected), selected.es || esFrom(selected.edges));
+  if (montage) updateLabels();
   need = true;
 }
 
@@ -759,6 +831,43 @@ function diagram(p){
   </svg><div class="legend">${p.esUnknown?"<u style=\"margin:0\"></u>robovi še niso znani (manjka kosovnica)":"<i></i>rob z ABS trakom<u></u>brez traku"}</div></div>`;
 }
 
+// vrstni red montaže: stenska vrsta (spodnje in visoke) od leve proti desni, nato otok, viseče, ostalo
+const montageCache = new WeakMap();
+function montageOrder(){
+  if (montageCache.has(current)) return montageCache.get(current);
+  const els = new Map();
+  for (const q of current.parts){ if (!q.size || !q.pos) continue; const k = elKey(q);
+    const sd = [...q.size].sort((a,b)=>a-b); if (sd[1] < 60) continue;   // letve in profili ne štejejo v obris omarice
+    const b = els.get(k) || {k, mn:[1e9,1e9,1e9], mx:[-1e9,-1e9,-1e9]};
+    for (let i=0;i<3;i++){ b.mn[i]=Math.min(b.mn[i],q.pos[i]-q.size[i]/2); b.mx[i]=Math.max(b.mx[i],q.pos[i]+q.size[i]/2); }
+    els.set(k,b); }
+  const all = [...els.values()]; const zBack = Math.min(...all.map(b=>b.mn[2]));
+  for (const b of all){ const h = b.mx[1]-b.mn[1];
+    b.cat = b.mn[1] > 1000 ? "viseča" : (b.mn[2] - zBack > 450 && b.mn[1] < 400) ? "otok" : (b.mn[1] < 400 && h >= 1500) ? "visoka" : b.mn[1] < 400 ? "spodnja" : "ostalo";
+    b.rank = {spodnja:0, visoka:0, otok:1, "viseča":2, ostalo:3}[b.cat]; }
+  all.sort((a,b)=>a.rank-b.rank || a.mn[0]-b.mn[0] || a.mn[2]-b.mn[2]);
+  const out = new Map(); all.forEach((b,i)=>out.set(b.k,{n:i+1, cat:b.cat, top:[(b.mn[0]+b.mx[0])/2, b.mx[1], b.mx[2]]}));
+  montageCache.set(current,out); return out;
+}
+const mNum = k => { const m = montageOrder().get(k); return m ? m.n : null; };
+let labelGroup = null;
+function updateLabels(){
+  if (!has3D || !root) return;
+  if (labelGroup){ labelGroup.parent && labelGroup.parent.remove(labelGroup); labelGroup.traverse(o=>{ o.material && (o.material.map && o.material.map.dispose(), o.material.dispose()); }); labelGroup = null; }
+  if (!montage) { need = true; return; }
+  labelGroup = new THREE.Group();
+  for (const [k,m] of montageOrder()){
+    const c = document.createElement("canvas"); c.width = c.height = 128; const g = c.getContext("2d");
+    const on = selEl===k;
+    g.fillStyle = on ? "#FF6A1F" : "rgba(20,23,27,.88)"; g.beginPath(); g.arc(64,64,58,0,Math.PI*2); g.fill();
+    g.lineWidth = 6; g.strokeStyle = "#FF8F4A"; g.stroke();
+    g.fillStyle = "#fff"; g.font = "bold 64px Archivo, system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(String(m.n),64,68);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c), depthTest:false, transparent:true}));
+    sp.position.set(m.top[0]/1000, m.top[1]/1000 + .12, m.top[2]/1000); sp.scale.set(.16,.16,1); sp.renderOrder = 10;
+    labelGroup.add(sp);
+  }
+  root.add(labelGroup); need = true;
+}
 function elInfo(k){
   const ps = elParts(k), name = ps[0] ? (ps[0].element||"Brez elementa") : "";
   const mn=[1e9,1e9,1e9], mx=[-1e9,-1e9,-1e9];
@@ -784,11 +893,21 @@ function renderElCard(card){
   const e = elInfo(selEl), set = scannedSet();
   const lab = e.ps.filter(q=>!q.noLabel).length, done = e.ps.filter(q=>set.has(q.code)).length;
   card.className = "card found elcard";
-  card.innerHTML = `<div class="card-head"><span class="chip">Omarica</span><span class="tag${done&&done===e.ps.length?" ok":""}"><i></i>${done} / ${e.ps.length} skenirano</span></div>
+  const mn = mNum(selEl);
+  if (VIEWER){ card.className = "card found elcard";
+    card.innerHTML = `<div class="card-head"><span class="chip">Omarica${mn?" "+mn:""}</span></div><div><p class="pname">${esc(e.name)}</p><div class="pelem">${e.dims?`Š ${fmt(e.dims[0])} × V ${fmt(e.dims[1])} × G ${fmt(e.dims[2])} mm`:""}</div></div>`; return; }
+  card.innerHTML = `<div class="card-head"><span class="chip">Omarica${mn?" "+mn:""}</span><span class="tag${done&&done===e.ps.length?" ok":""}"><i></i>${done} / ${e.ps.length} skenirano</span></div>
     <div><p class="pname">${esc(e.name)}</p><div class="pelem">${e.dims?`Š ${fmt(e.dims[0])} × V ${fmt(e.dims[1])} × G ${fmt(e.dims[2])} mm · `:""}${e.ps.length} kosov${lab!==e.ps.length?`, ${lab} z etiketo`:""}</div></div>
     ${runnersHTML(e)}
     ${e.items.length?`<details class="hwlist"><summary>Vse okovje (${e.items.length})</summary><ul>${e.items.map(it=>`<li><b>${it.q}×</b>${esc(it.n)}</li>`).join("")}</ul></details>`:""}
     <div class="empty-msg">Tapni kos v omarici za mere in robove.</div>`;
+}
+function scanByRow(p){
+  const i = scanInfo.get(current.id) && scanInfo.get(current.id).get(p.code);
+  if (!i || !scannedSet().has(p.code)) return "";
+  const d = new Date(Number(i.at)||0), today = new Date().toDateString()===d.toDateString();
+  const when = (today ? "danes " : d.toLocaleDateString("sl-SI")+" ") + d.toLocaleTimeString("sl-SI",{hour:"2-digit",minute:"2-digit"});
+  return `<dt>Skeniral</dt><dd class="scanby">${esc(i.by||"neznano")} · ${when}</dd>`;
 }
 function recutBlock(p){
   const r = recutOf(p);
@@ -799,11 +918,13 @@ function recutBlock(p){
 function elLine(p){
   const e = elInfo(elKey(p));
   const nls = e.runners.map(r=>r.nl).filter(Boolean);
-  return `<button type="button" class="elline" id="toEl"><span>Omarica <b>${esc(e.name)}</b></span>${nls.length?`<em>vodila ${nls.join(" / ")}</em>`:`<em>podrobnosti ›</em>`}</button>`;
+  const mn = mNum(elKey(p));
+  return `<button type="button" class="elline" id="toEl"><span>Omarica ${mn?`<span class="mnum">${mn}</span>`:""}<b>${esc(e.name)}</b></span>${nls.length?`<em>vodila ${nls.join(" / ")}</em>`:`<em>podrobnosti ›</em>`}</button>`;
 }
 function renderCard(){
   const card = $("#card");
   if (!selected && selEl!=null){ renderElCard(card); return; }
+  if (!selected && VIEWER){ card.className = "card"; card.innerHTML = viewIntro; return; }
   if (!selected){
     card.className = "card";
     card.innerHTML = `<div><p class="pname">Skeniraj kos</p><div class="pelem">Pokaže se, kje v projektu stoji.</div></div>
@@ -819,7 +940,7 @@ function renderCard(){
       <dl class="kv">
         <dt>Mere</dt><dd>${fmt(p.L)} × ${fmt(p.W)}${p.T?" × "+fmt(p.T):""} mm</dd>
         <dt>Material</dt><dd>${esc(m&&p.mat!=="_"?m.label:(p.matText||"–"))}</dd>
-        <dt>Robovi</dt><dd>${esc(p.edges||"–")}</dd>
+        <dt>Robovi</dt><dd>${esc(p.edges||"–")}</dd>${scanByRow(p)}
       </dl></div>${twinBar(p)}${recutBlock(p)}${elLine(p)}`;
   const rcb = card.querySelector("[data-rc]"); rcb && rcb.addEventListener("click",()=>openRecut(p));
   const rcd = card.querySelector("[data-rcdone]"); rcd && rcd.addEventListener("click",()=>{ const r = recutOf(p); r && markRecutDone(r); });
@@ -849,11 +970,12 @@ function renderList(){
     groups.get(k).push(p);
   }
   const nameCount = {}; for (const k of groups.keys()){ const n = groups.get(k)[0].element||""; nameCount[n] = (nameCount[n]||0)+1; }
-  const seen = {};
+  const seen = {}, mo = montageOrder();
+  const ordered = [...groups].sort((a,b)=>((mo.get(a[0])||{n:1e9}).n)-((mo.get(b[0])||{n:1e9}).n));
   let h = "";
-  for (const [k,arr] of groups){
-    const el = arr[0].element||""; seen[el] = (seen[el]||0)+1;
-    h += `<button type="button" class="group" data-el="${esc(k)}">${esc(el||"Brez elementa")}${nameCount[el]>1?" · "+seen[el]:""}<span>Pokaži v 3D</span></button>`;
+  for (const [k,arr] of ordered){
+    const el = arr[0].element||""; seen[el] = (seen[el]||0)+1; const m = mo.get(k);
+    h += `<button type="button" class="group" data-el="${esc(k)}"><span style="opacity:1;color:inherit;font-weight:inherit;letter-spacing:inherit">${m?`<span class="mnum">${m.n}</span>`:""}${esc(el||"Brez elementa")}${nameCount[el]>1?" · "+seen[el]:""}${m?`<span class="cat">${m.cat}</span>`:""}</span><span>Pokaži v 3D</span></button>`;
     for (const p of arr) h += `<button type="button" class="row${selected===p?" sel":""}" data-i="${current.parts.indexOf(p)}">
       <span class="chk${set.has(p.code)?" on":""}">${set.has(p.code)?CHECK:""}</span><span class="n">${esc(p.name)}${p.note?" "+esc(p.note):""}</span>
       <span class="d">${fmt(p.L)} × ${fmt(p.W)}</span><span class="c">${esc(p.code)}</span></button>`;
@@ -926,7 +1048,7 @@ function handleCode(raw,how,{quiet=false}={}){
     select(all[0],{mark:quiet}); return {ok:true, p:all[0], n:all.length};
   }
   setStatus(`${how}: ${norm(raw)} → ${p.name}, ${p.element}`,"ok");
-  if (!quiet) toast(`${p.name} · ${p.element}`);
+  if (!quiet){ const n = mNum(elKey(p)); toast(`${p.name} → ${n?"omarica "+n+" · ":""}${p.element}`); }
   select(p,{mark:true});
   return {ok:true, p, n:1};
 }
@@ -988,6 +1110,82 @@ $("#viewMode").addEventListener("click",()=>{
 });
 syncViewBtn();
 
+// ---------- meni
+const NEWS_VER = "2026-11-02c";
+function renderMenu(){
+  const shared = current && current.saved && cloud;
+  const items = [
+    ["projects", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>', "Projekti", "Odpri, uvozi ali izbriši projekt", ""],
+    ["recuts", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg>', "Za ponoven razrez", recuts.length ? "Seznam poškodovanih kosov" : "Ni kosov za razrez", recuts.length ? `<span class="r warn">${recuts.length}</span>` : ""],
+    ["missing", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>', "Skenirano", "Napredek projekta", `<span class="r">${current.parts.filter(q=>scannedSet().has(q.code)).length} / ${current.parts.length}</span>`],
+    ["montage", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8l2-1v10M9.5 17h5"/></svg>', "Številke omaric", "Vrstni red montaže v 3D", `<span class="r${montage?" on":""}">${montage?"vklop":"izklop"}</span>`],
+    ["xray", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>', "Prosojen pogled", "Preklop med prosojnim in polnim 3D", `<span class="r${viewMode==="xray"?" on":""}">${viewMode==="xray"?"vklop":"izklop"}</span>`],
+    ...(shared ? [["share", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>', "Pokaži stranki", "Povezava za ogled projekta v 3D", current.shareToken ? '<span class="r on">deljeno</span>' : ""]] : []),
+    ["workshop", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>', "Moja delavnica", "Tvoje ime, koda za sodelavce, naročnina", ""],
+    ["news", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.9H22l-6 4.6 2.3 7L12 16.3 5.7 20.5 8 13.5 2 8.9h7.6z"/></svg>', "Kaj je novega", "Nove funkcije v aplikaciji", newsUnseen() ? '<span class="r warn">novo</span>' : ""],
+  ];
+  $("#menuList").innerHTML = items.map(([k,ic,t,sub,r])=>`<button type="button" class="mi" data-m="${k}"><span class="ico">${ic}</span><span>${t}<small>${sub}</small></span>${r}</button>`).join("");
+  $("#menuSub").textContent = current ? `Projekt: ${current.name}` : "";
+}
+function newsUnseen(){ try{ return localStorage.getItem("kosmo.news") !== NEWS_VER; }catch(e){ return false; } }
+function updateBadge(){ const n = recuts.length, b = $("#menuBadge"); if (!b) return;
+  b.hidden = !(n || newsUnseen()); b.textContent = n ? String(n) : "!"; }
+$("#menuBtn").addEventListener("click",()=>{ renderMenu(); $("#menuSheet").hidden = false; });
+$("#menuClose").addEventListener("click",()=>$("#menuSheet").hidden = true);
+$("#menuSheet").addEventListener("click",e=>{
+  if (e.target === $("#menuSheet")){ $("#menuSheet").hidden = true; return; }
+  const b = e.target.closest("[data-m]"); if (!b) return; const k = b.dataset.m;
+  if (k==="montage"){ $("#montage").click(); renderMenu(); return; }
+  if (k==="xray"){ $("#viewMode").click(); renderMenu(); return; }
+  $("#menuSheet").hidden = true;
+  if (k==="projects" || k==="workshop"){ $("#openProjects").click(); if (k==="workshop") setTimeout(()=>{ const w = $("#wsInfo"); w && w.scrollIntoView({block:"start"}); },50); }
+  else if (k==="recuts"){ if (!recuts.length){ toast("Ni kosov za ponoven razrez"); return; } const panel = document.querySelector(".panel"), box = $("#recuts"); panel.scrollTo({top: box.offsetTop - 12}); }
+  else if (k==="missing"){ const panel = document.querySelector(".panel"), w = document.querySelector(".listwrap"); panel.scrollTo({top: w.offsetTop - 12}); }
+  else if (k==="share"){ openShare(current); }
+  else if (k==="news"){ $("#newsSheet").hidden = false; try{ localStorage.setItem("kosmo.news", NEWS_VER); }catch(_){} updateBadge(); }
+});
+$("#newsClose").addEventListener("click",()=>$("#newsSheet").hidden = true);
+
+function syncMontageBtn(){ const b = $("#montage"); b.classList.toggle("on",montage); b.setAttribute("aria-pressed",String(montage)); }
+$("#montage").addEventListener("click",()=>{ montage = !montage; try{ localStorage.setItem("kosmo.montage", montage?"1":"0"); }catch(e){}
+  syncMontageBtn(); updateLabels(); toast(montage ? "Številke omaric vklopljene" : "Številke omaric izklopljene"); });
+try{ montage = localStorage.getItem("kosmo.montage")==="1"; }catch(e){}
+syncMontageBtn();
+
+// povezava za stranko
+const shareUrlOf = t => location.origin + location.pathname.replace(/index\.html$/,"") + "?ogled=" + t;
+const newToken = () => { const a = new Uint8Array(18); crypto.getRandomValues(a); return Array.from(a,b=>b.toString(36).padStart(2,"0")).join("").slice(0,28); };
+let shareProj = null;
+async function openShare(p){
+  shareProj = p; const sh = $("#shareSheet"); sh.hidden = false; $("#shareMsg").textContent = ""; $("#shareMsg").className = "status";
+  $("#shareText").textContent = `Stranka si s to povezavo ogleda projekt »${p.name}« v 3D. Prijava ni potrebna, urejati ne more ničesar.`;
+  if (!p.shareToken){
+    $("#shareUrl").textContent = "Ustvarjam povezavo …";
+    const t = newToken();
+    const {error} = await sb.from("projects").update({share_token:t}).eq("id",p.id);
+    if (error){ $("#shareUrl").textContent = "–"; $("#shareMsg").textContent = "Povezave ni bilo mogoče ustvariti: " + error.message; $("#shareMsg").className = "status err"; return; }
+    p.shareToken = t; renderProjects();
+  }
+  $("#shareUrl").textContent = shareUrlOf(p.shareToken);
+}
+$("#shareCopy").addEventListener("click",async()=>{ const t = $("#shareUrl").textContent;
+  try{ await navigator.clipboard.writeText(t); toast("Povezava kopirana"); }catch(e){ const r = document.createRange(); r.selectNodeContents($("#shareUrl")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Označeno – kopiraj ročno"); } });
+$("#shareSend").addEventListener("click",async()=>{ const t = $("#shareUrl").textContent;
+  try{ if (navigator.share){ await navigator.share({title:shareProj?shareProj.name:"Kosmo", text:"Vaša kuhinja v 3D:", url:t}); return; } }catch(e){ return; }
+  try{ await navigator.clipboard.writeText(t); toast("Povezava kopirana – prilepi jo v sporočilo"); }catch(e){} });
+$("#shareClose").addEventListener("click",()=>$("#shareSheet").hidden = true);
+$("#shareStop").addEventListener("click",async e=>{ const b = e.currentTarget, p = shareProj; if (!p) return;
+  if (!b.classList.contains("armed")){ b.classList.add("armed"); b.textContent = "Res ukini?"; setTimeout(()=>{ b.classList.remove("armed"); b.textContent = "Ukini povezavo"; },3000); return; }
+  b.classList.remove("armed"); b.textContent = "Ukini povezavo";
+  const {error} = await sb.from("projects").update({share_token:null}).eq("id",p.id);
+  if (error){ toast("Ni uspelo"); return; }
+  p.shareToken = null; renderProjects(); $("#shareSheet").hidden = true; toast("Povezava ukinjena – stara ne deluje več"); });
+
+$("#nameForm").addEventListener("submit",async e=>{ e.preventDefault(); const n = $("#myName").value.trim().slice(0,40);
+  myName = n; try{ localStorage.setItem("kosmo.name", n); }catch(_){}
+  if (sb){ const {error} = await sb.auth.updateUser({data:{name:n}}); if (error){ toast("Imena ni bilo mogoče shraniti"); return; } }
+  toast("Ime shranjeno"); });
+
 $("#rcReasons").addEventListener("click",e=>{ const b = e.target.closest(".btn"); if (!b) return; b.classList.toggle("on"); });
 $("#rcPhotoBtn").addEventListener("click",()=>$("#rcPhoto").click());
 $("#rcPhoto").addEventListener("change",async e=>{ const f = e.target.files[0]; e.target.value = ""; if (!f) return;
@@ -1040,15 +1238,15 @@ const idb = (()=>{ // majhna lokalna shramba za način brez oblaka
 const store = {
   async listProjects(){
     if (cloud){
-      const {data,error} = await sb.from("projects").select("id,name,program,created_at,data").eq("workshop_id",WS).order("created_at",{ascending:false});
+      const {data,error} = await sb.from("projects").select("id,name,program,created_at,data,share_token").eq("workshop_id",WS).order("created_at",{ascending:false});
       if (error) throw error;
-      return data.map(r=>({...(r.data||{}), id:r.id, name:r.name, program:r.program, createdAt:r.created_at}));
+      return data.map(r=>({...(r.data||{}), id:r.id, name:r.name, program:r.program, createdAt:r.created_at, shareToken:r.share_token||null}));
     }
     const all = await idb.all("projects"); return (all||[]).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   },
   async saveProject(doc){
     const id = doc.id || ("p" + Date.now().toString(36) + Math.random().toString(36).slice(2,6));
-    const {id:_, name, program, createdAt, ...rest} = doc;
+    const {id:_, name, program, createdAt, shareToken:_s, ...rest} = doc;
     if (cloud){
       const {error} = await sb.from("projects").upsert({id, workshop_id:WS, name, program, created_at:createdAt||Date.now(), data:rest});
       if (error) throw error;
@@ -1060,11 +1258,15 @@ const store = {
     else { await idb.del("projects",id); await idb.del("scans",id); }
   },
   async getScans(pid){
-    if (cloud){ const {data,error} = await sb.from("scans").select("code").eq("project_id",pid); if (error) throw error; return new Set(data.map(r=>r.code)); }
+    if (cloud){ const {data,error} = await sb.from("scans").select("code,by_name,at").eq("project_id",pid); if (error) throw error;
+      scanInfo.set(pid, new Map(data.map(r=>[r.code,{by:r.by_name,at:r.at}]))); return new Set(data.map(r=>r.code)); }
     return new Set((await idb.get("scans",pid)) || []);
   },
   async addScan(pid,code){
-    if (cloud){ const {error} = await sb.from("scans").upsert({workshop_id:WS, project_id:pid, code, at:Date.now()}); if (error) throw error; return; }
+    const at = Date.now();
+    if (!scanInfo.has(pid)) scanInfo.set(pid,new Map());
+    if (!scanInfo.get(pid).has(code)) scanInfo.get(pid).set(code,{by:myName,at});
+    if (cloud){ const {error} = await sb.from("scans").upsert({workshop_id:WS, project_id:pid, code, at, by_name:myName||null},{onConflict:"project_id,code",ignoreDuplicates:true}); if (error) throw error; return; }
     const s = new Set((await idb.get("scans",pid)) || []); s.add(code); await idb.put("scans",pid,[...s]);
   },
   async clearScans(pid){
@@ -1095,6 +1297,7 @@ const store = {
 
 function saveScan(code){ const pid = current.id; store.addScan(pid,code).catch(()=>toast("Skena ni bilo mogoče shraniti.")); }
 async function loadScans(p){
+  if (VIEWER) return;
   try{ const s = await store.getScans(p.id); scanned.set(p.id,s); if (p===current){ renderCard(); renderList(); restyle(); } }catch(e){}
 }
 function watchScans(){ loadScans(current); loadRecuts(current); }
@@ -1103,12 +1306,13 @@ let recuts = [];   // odprti zahtevki za trenutni projekt
 const partOfRecut = r => (r.part_idx!=null && current.parts[r.part_idx] && current.parts[r.part_idx].code===r.code) ? current.parts[r.part_idx] : current.parts.find(q=>q.code===r.code);
 const recutOf = p => p && recuts.find(r=>partOfRecut(r)===p);
 async function loadRecuts(p){
-  if (!p || p.id==="demo"){ recuts = []; renderRecuts(); return; }
+  if (!p || p.id==="demo" || VIEWER){ recuts = []; renderRecuts(); return; }
   try{ const list = await store.listRecuts(p.id); if (p===current){ recuts = list; renderRecuts(); renderCard(); restyle(); } }catch(e){ recuts = []; renderRecuts(); }
 }
 const dimTxt = q => `${fmt(q.L)} × ${fmt(q.W)}${q.T?" × "+fmt(q.T):""} mm`;
 function renderRecuts(){
   const box = $("#recuts"); if (!box) return;
+  try{ updateBadge(); }catch(e){}
   box.hidden = !recuts.length;
   $("#rcTitle").textContent = `Za ponoven razrez (${recuts.length})`;
   $("#rcList").innerHTML = recuts.map((r,i)=>{ const q = r.part||{};
@@ -1154,8 +1358,8 @@ function renderProjects(){
   $("#project").innerHTML = projects.map(p=>`<option value="${esc(p.id)}"${p===current?" selected":""}>${esc(p.name)} · ${esc(p.program)}</option>`).join("");
   const saved = projects.filter(p=>p.saved);
   $("#projList").innerHTML = saved.length ? saved.map(p=>`<div class="prow"><b>${esc(p.name)}</b>
-      <small>${esc(p.program)} · ${p.parts.length} kosov · ${new Date(p.createdAt||0).toLocaleDateString("sl-SI")}</small>
-      <div class="acts"><button class="btn" type="button" data-open="${esc(p.id)}">Odpri</button>
+      <small>${esc(p.program)} · ${p.parts.length} kosov · ${new Date(p.createdAt||0).toLocaleDateString("sl-SI")}${p.shareToken?'<span class="shared">deljeno</span>':""}</small>
+      <div class="acts"><button class="btn" type="button" data-open="${esc(p.id)}">Odpri</button>${cloud?`<button class="btn" type="button" data-share="${esc(p.id)}" title="Povezava za stranko">Deli</button>`:""}
       <button class="btn" type="button" data-exp="${esc(p.id)}" title="Shrani kot datoteko">Izvozi</button>
       <button class="btn danger" type="button" data-del="${esc(p.id)}">Izbriši</button></div></div>`).join("")
     : `<div class="empty-msg" style="padding:10px 0">Ni še shranjenih projektov. Uvozi prvega: SAT ali ZIP iz Mega Tischlerja.</div>`;
@@ -1191,8 +1395,9 @@ function downloadJSON(obj,name){
 projSheet.addEventListener("click",async e=>{
   if (e.target===projSheet){ projSheet.hidden=true; return; }
   const o = e.target.closest("[data-open]"); if (o){ projSheet.hidden=true; openProject(projects.find(p=>p.id===o.dataset.open)); return; }
+  const sh = e.target.closest("[data-share]"); if (sh){ const p = projects.find(q=>q.id===sh.dataset.share); p && openShare(p); return; }
   const x = e.target.closest("[data-exp]");
-  if (x){ const p = projects.find(q=>q.id===x.dataset.exp); if (p){ const {saved,hasGeometry,...doc} = p; downloadJSON({kjejekos:1,...doc}, p.name.replace(/[^\w\- ]+/g,"_")+".kjejekos.json"); } return; }
+  if (x){ const p = projects.find(q=>q.id===x.dataset.exp); if (p){ const {saved,hasGeometry,shareToken,...doc} = p; downloadJSON({kjejekos:1,...doc}, p.name.replace(/[^\w\- ]+/g,"_")+".kjejekos.json"); } return; }
   const d = e.target.closest("[data-del]"); if (!d) return;
   if (!d.classList.contains("armed")){ d.classList.add("armed"); d.textContent="Res izbriši?"; setTimeout(()=>{ d.classList.remove("armed"); d.textContent="Izbriši"; },3000); return; }
   const p = projects.find(q=>q.id===d.dataset.del); if (!p) return;
@@ -1319,7 +1524,7 @@ $("#importForm").addEventListener("submit",async e=>{
     }
     if (got.json.length){
       const j = JSON.parse(got.json[0].text); if (!Array.isArray(j.parts)) throw new Error("datoteka ni projekt Kosmo");
-      const {kjejekos, id, saved, hasGeometry, ...rest} = j; doc = {...rest, name: $("#impName").value.trim() || rest.name || name, createdAt: Date.now()};
+      const {kjejekos, id, saved, hasGeometry, shareToken, ...rest} = j; doc = {...rest, name: $("#impName").value.trim() || rest.name || name, createdAt: Date.now()};
     } else if (got.s3d.length){
       say("Berem projekt 3D Corpus …"); await tick();
       doc = CorpusImport.buildProject(CorpusImport.parseS3D(got.s3d[0].text), name);
@@ -1543,6 +1748,20 @@ $("#listhead-clear").addEventListener("click",e=>{ const b=e.currentTarget;
   b.classList.remove("armed","danger"); b.textContent="Počisti"; clearScans(); toast("Skenirano počiščeno"); });
 
 (async()=>{
+  if (VIEWER){   // ogled za stranko: brez prijave, samo 3D
+    document.body.classList.add("viewer");
+    const hint = $("#hint"); if (hint) hint.textContent = "Vrti s prstom · tapni omarico";
+    if (!cloud){ setStatus("Ogled ni na voljo.","err"); return; }
+    sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:false, autoRefreshToken:false, detectSessionInUrl:false}});
+    const {data, error} = await sb.rpc("get_shared_project",{p_token:VIEW_TOKEN});
+    if (error || !data){ $("#card").className = "card"; $("#card").innerHTML = `<div><p class="pname">Povezava ne velja več</p><div class="pelem">Za novo povezavo se obrni na mizarja.</div></div>`; return; }
+    const sub = document.querySelector(".brand small"); if (sub) sub.textContent = data.workshop || "";
+    const p = toProject({...(data.data||{}), id:"ogled", name:data.name, program:data.program});
+    projects.length = 0; projects.push(p); openProject(p);
+    viewIntro = `<div><p class="pname">${esc(data.name)}</p><div class="pelem">Tapni omarico za mere. Vrti s prstom, približaj z dvema prstoma.</div></div><div class="vfoot">${esc(data.workshop||"")} · Kosmo</div>`;
+    renderCard();
+    return;
+  }
   if (cloud){
     sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage:authStorage}});
     sb.auth.onAuthStateChange(ev=>{ if (ev === "PASSWORD_RECOVERY"){ $("#loginSheet").hidden = true; $("#pwSheet").hidden = false; } });
@@ -1552,6 +1771,8 @@ $("#listhead-clear").addEventListener("click",e=>{ const b=e.currentTarget;
       if (!error) setTimeout(()=>{ $("#pwSheet").hidden = true; location.replace(location.pathname); },900); });
     await ensureLogin();
     $("#logout").hidden = false;
+    try{ const {data:u} = await sb.auth.getUser(); const meta = (u && u.user && u.user.user_metadata) || {};
+      myName = meta.name || (u && u.user && u.user.email ? u.user.email.split("@")[0] : ""); $("#myName").value = meta.name || ""; $("#nameForm").hidden = false; }catch(e){}
     let mem = (await sb.from("members").select("workshop_id,role,workshops(name,active,trial_until,invite_code)")).data || [];
     if (!mem.length){ await ensureWorkshop(); mem = (await sb.from("members").select("workshop_id,role,workshops(name,active,trial_until,invite_code)")).data || []; }
     const m = mem.find(x=>x.workshops);
@@ -1563,6 +1784,7 @@ $("#listhead-clear").addEventListener("click",e=>{ const b=e.currentTarget;
     const sub = document.querySelector(".brand small"); if (sub) sub.textContent = m.workshops.name;
     store.subscribe(()=>refreshProjects(), pid=>{ if (pid===current.id) loadScans(current); }, pid=>{ if (!pid || pid===current.id) loadRecuts(current); });
   }
+  if (!cloud){ try{ myName = localStorage.getItem("kosmo.name") || ""; }catch(e){} }
   let last = null; try{ last = localStorage.getItem("kjejekos.last"); }catch(e){}
   await refreshProjects(last && last!=="demo" ? last : null);
 })();
