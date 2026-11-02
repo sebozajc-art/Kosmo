@@ -294,6 +294,8 @@ body.viewer .panel{max-height:34vh}
 .tl-form input{flex:1 1 160px;min-width:0;border:1px solid var(--hit);background:var(--solid);border-radius:10px;padding:9px 10px;font-size:15px}
 .tl-form select{border:1px solid var(--hair);background:var(--solid);border-radius:10px;padding:8px;font-size:14px}
 .tl-form .btn{padding:8px 14px}
+.pushbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:12px;padding:8px 10px}
+.pushbar span{flex:1 1 200px}
 .taskstrip{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--muted)}
 .taskstrip b{color:var(--ink)} .taskstrip .over{color:var(--warn);font-weight:700}
 .news{display:flex;flex-direction:column;gap:12px}
@@ -453,7 +455,8 @@ html{padding-top:env(safe-area-inset-top,0px)}
       <input type="text" id="tkTitle" placeholder="Kaj je treba narediti? npr. Razrez otok – stanovanje mama" maxlength="140" required aria-label="Opravilo">
       <div class="quick" id="tkQuick"><button type="button" class="btn" data-d="0">Danes</button><button type="button" class="btn" data-d="1">Jutri</button><button type="button" class="btn" data-d="fri">Ta petek</button><button type="button" class="btn" data-d="7">Čez teden</button><button type="button" class="btn" data-d="">Brez roka</button></div>
       <div class="tk-row"><input type="date" id="tkDue" aria-label="Rok"><input type="time" id="tkTime" aria-label="Ura (neobvezno)" style="flex:0 1 120px"><label><input type="checkbox" id="tkUrgent">Nujno</label></div>
-      <div class="tk-row"><select id="tkProj" aria-label="Projekt"></select><input class="as" id="tkWho" placeholder="Kdo (neobvezno)" maxlength="40" aria-label="Kdo"></div>
+      <div class="tk-row"><select id="tkProj" aria-label="Projekt"></select><input class="as" id="tkWho" placeholder="Kdo (neobvezno)" maxlength="40" aria-label="Kdo"><select id="tkWhoSel" aria-label="Komu" hidden></select></div>
+      <div class="pushbar" id="pushBar" hidden><span>Vklopi obvestila, da ti telefon javi, ko ti kdo dodeli opravilo.</span><button type="button" class="btn" id="pushOn">Vklopi</button></div>
       <div class="sheet-actions" style="justify-content:flex-start"><button class="btn primary" type="submit">Dodaj opravilo</button><span class="status" id="tkMsg"></span></div>
     </form>
     <label class="check" id="tkShowDoneL"><input type="checkbox" id="tkShowDone">Pokaži opravljena</label>
@@ -466,6 +469,7 @@ html{padding-top:env(safe-area-inset-top,0px)}
   <div class="sheet-in">
     <h3>Kaj je novega</h3>
     <div class="news">
+      <div><b>Obvestila</b><span>Ko nekomu dodeliš opravilo, mu telefon pozvoni z obvestilom. Vsak jih enkrat vklopi v meniju pod Obvestila.</span></div>
       <div><b>Časovnica dneva</b><span>V koledarju tapneš dan in vidiš ure od 6.00 do 20.00. Tapni uro in napiši, kaj je treba narediti.</span></div>
       <div><b>Koledar opravil</b><span>V Opravilih preklopiš na Koledar: cel mesec na velikem zaslonu, tap na dan pokaže in doda opravila za tisti dan.</span></div>
       <div><b>Filter za popravilo in neposkenirane</b><span>V meniju izbereš »Za popravilo« ali »Še ni skenirano«. Seznam in 3D pokažeta samo te kose.</span></div>
@@ -684,7 +688,7 @@ let viewMode = (()=>{ try{ return localStorage.getItem("kosmo.view2") || "solid"
 const elKey = p => p ? String(p.el ?? p.element ?? "") : "";
 const VIEW_TOKEN = new URLSearchParams(location.search).get("ogled");
 const VIEWER = !!VIEW_TOKEN;
-let montage = false, myName = "", viewIntro = "", listFilter = null;   // null | "recut" | "missing"
+let montage = false, myName = "", viewIntro = "", listFilter = null, myId = null, members = [];   // null | "recut" | "missing"
 function inFilter(p){ if (!listFilter || !p) return true;
   if (listFilter==="recut") return recuts.some(r=>partOfRecut(r)===p);
   if (listFilter==="missing") return !scannedSet().has(p.code); return true; }
@@ -1362,6 +1366,7 @@ function openTasks(){
   $("#tasksSheet").hidden = false; $("#tkMsg").textContent = "";
   $("#tkProj").innerHTML = `<option value="">Brez projekta</option>` + projects.filter(p=>p.saved).map(p=>`<option value="${esc(p.id)}"${p===current?" selected":""}>${esc(p.name)}</option>`).join("");
   if (!$("#tkDue").value) setDue("1");
+  renderPushBar(); if (cloud && !members.length) loadMembers();
   let tab = "list"; try{ tab = localStorage.getItem("kosmo.tktab") || "list"; }catch(e){}
   setTkTab(tab); loadTasks();
 }
@@ -1380,9 +1385,12 @@ $("#taskStrip").addEventListener("click",openTasks);
 $("#tkForm").addEventListener("submit",async e=>{
   e.preventDefault();
   const title = $("#tkTitle").value.trim(); if (!title) return;
-  const t = {title, due: $("#tkDue").value || null, at_time: $("#tkTime").value || null, urgent: $("#tkUrgent").checked, project_id: $("#tkProj").value || null, assignee: $("#tkWho").value.trim() || null, created_by: myName || null};
+  const sel = $("#tkWhoSel"), mid = cloud && !sel.hidden ? sel.value : "", mem = mid && members.find(m=>m.user_id===mid);
+  const t = {title, due: $("#tkDue").value || null, at_time: $("#tkTime").value || null, urgent: $("#tkUrgent").checked, project_id: $("#tkProj").value || null,
+    assignee: mem ? (mem.display_name || "sodelavec") : ($("#tkWho").value.trim() || null), created_by: myName || null};
+  if (mem) t.assignee_id = mem.user_id;
   const btn = e.submitter; btn && (btn.disabled = true); $("#tkMsg").textContent = "Shranjujem …"; $("#tkMsg").className = "status";
-  try{ await store.addTask(t); $("#tkTitle").value = ""; $("#tkTime").value = ""; $("#tkUrgent").checked = false; $("#tkWho").value = ""; $("#tkMsg").textContent = "Dodano"; $("#tkMsg").className = "status ok"; await loadTasks(); }
+  try{ const newId = await store.addTask(t); if (t.assignee_id && newId) notifyTask(newId, t.assignee_id, t.assignee); $("#tkTitle").value = ""; $("#tkTime").value = ""; $("#tkWhoSel").value = ""; $("#tkUrgent").checked = false; $("#tkWho").value = ""; $("#tkMsg").textContent = "Dodano"; $("#tkMsg").className = "status ok"; await loadTasks(); }
   catch(err){ $("#tkMsg").textContent = /relation|does not exist|schema cache/i.test(err.message||"") ? "Opravila v bazi še niso pripravljena (zaženi posodobitev-4.sql)." : "Ni bilo mogoče shraniti: " + (err.message||err); $("#tkMsg").className = "status err"; }
   finally{ btn && (btn.disabled = false); }
 });
@@ -1404,8 +1412,55 @@ $("#tkList").addEventListener("click",async e=>{
   }
 });
 
+// ---------- sodelavci in obvestila
+async function loadMembers(){
+  if (!cloud || !sb || !WS) return;
+  try{ const {data} = await sb.rpc("workshop_members",{p_ws:WS}); members = data || []; }catch(e){ members = []; }
+  const sel = $("#tkWhoSel"); if (!sel) return;
+  sel.innerHTML = `<option value="">Komu (neobvezno)</option>` + members.map(m=>`<option value="${esc(m.user_id)}">${esc(m.display_name || "Član brez imena")}${m.user_id===myId?" (jaz)":""}</option>`).join("");
+  sel.hidden = !members.length; $("#tkWho").hidden = !!members.length;
+}
+async function notifyTask(id, uid, name){
+  if (!cloud || !sb || uid===myId) return;
+  try{ const {data, error} = await sb.functions.invoke("notify-task",{body:{task_id:id}});
+    if (error) throw error;
+    toast(data && data.sent ? `Obvestilo poslano: ${name}` : `${name} še nima vklopljenih obvestil`); }
+  catch(e){ toast("Opravilo dodano, obvestila ni bilo mogoče poslati"); }
+}
+const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window && !!(CFG.vapidPublicKey);
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent), standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+function pushState(){ if (!pushSupported()) return "ni"; return Notification.permission; }   // default | granted | denied | ni
+function b64ToU8(b){ const p = "=".repeat((4 - b.length % 4) % 4), r = atob((b + p).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from(r, c=>c.charCodeAt(0)); }
+async function enablePush(){
+  if (!cloud || !sb || !WS){ toast("Obvestila delujejo samo s skupno bazo"); return false; }
+  if (!pushSupported()){ toast(isIOS && !standalone ? "Na iPhonu najprej: Deli → Dodaj na začetni zaslon, nato odpri od tam" : "Ta brskalnik ne podpira obvestil"); return false; }
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted"){ toast("Obvestila so zavrnjena – vklopiš jih v nastavitvah telefona"); renderPushBar(); return false; }
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64ToU8(CFG.vapidPublicKey)});
+    const j = sub.toJSON();
+    const {error} = await sb.from("push_subs").upsert({endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth, workshop_id:WS, user_id:myId});
+    if (error) throw error;
+    toast("Obvestila vklopljena"); renderPushBar(); return true;
+  }catch(e){ toast("Obvestil ni bilo mogoče vklopiti"); return false; }
+}
+async function refreshPushSub(){   // ob zagonu osveži naročnino, če je dovoljenje že dano
+  if (!cloud || !sb || !WS || pushState()!=="granted") return;
+  try{ const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription();
+    if (!sub){ await enablePush(); return; }
+    const j = sub.toJSON(); await sb.from("push_subs").upsert({endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth, workshop_id:WS, user_id:myId}); }catch(e){}
+}
+function renderPushBar(){ const b = $("#pushBar"); if (!b) return; const st = pushState();
+  b.hidden = !(cloud && (st==="default" || (st==="ni" && isIOS && !standalone)));
+  if (st==="ni" && isIOS) b.querySelector("span").textContent = "Za obvestila na iPhonu: Deli → Dodaj na začetni zaslon, nato aplikacijo odpri od tam.";
+}
+$("#pushOn").addEventListener("click",enablePush);
+navigator.serviceWorker && navigator.serviceWorker.addEventListener("message",e=>{ if (e.data && e.data.kosmo==="open-tasks"){ loadTasks(); openTasks(); } });
+
 // ---------- meni
-const NEWS_VER = "2026-11-02g";
+const NEWS_VER = "2026-11-02h";
 function renderMenu(){
   const shared = current && current.saved && cloud;
   const items = [
@@ -1416,6 +1471,7 @@ function renderMenu(){
     ["montage", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8l2-1v10M9.5 17h5"/></svg>', "Številke omaric", "Vrstni red montaže v 3D", `<span class="r${montage?" on":""}">${montage?"vklop":"izklop"}</span>`],
     ["xray", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>', "Prosojen pogled", "Preklop med prosojnim in polnim 3D", `<span class="r${viewMode==="xray"?" on":""}">${viewMode==="xray"?"vklop":"izklop"}</span>`],
     ...(shared ? [["share", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>', "Pokaži stranki", "Povezava za ogled projekta v 3D", current.shareToken ? '<span class="r on">deljeno</span>' : ""]] : []),
+    ...(cloud ? [["push", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>', "Obvestila", "Telefon te opozori na dodeljena opravila", `<span class="r${pushState()==="granted"?" on":""}">${pushState()==="granted"?"vklop":pushState()==="denied"?"zavrnjeno":"izklop"}</span>`]] : []),
     ["workshop", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>', "Moja delavnica", "Tvoje ime, koda za sodelavce, naročnina", ""],
     ["news", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.9H22l-6 4.6 2.3 7L12 16.3 5.7 20.5 8 13.5 2 8.9h7.6z"/></svg>', "Kaj je novega", "Nove funkcije v aplikaciji", newsUnseen() ? '<span class="r warn">novo</span>' : ""],
   ];
@@ -1438,6 +1494,7 @@ $("#menuSheet").addEventListener("click",e=>{
   else if (k==="missing"){ select(null,{fly:false}); setListFilter("missing"); }
   else if (k==="share"){ openShare(current); }
   else if (k==="tasks"){ openTasks(); }
+  else if (k==="push"){ if (pushState()==="granted"){ refreshPushSub(); toast("Obvestila so že vklopljena"); } else enablePush(); }
   else if (k==="news"){ $("#newsSheet").hidden = false; try{ localStorage.setItem("kosmo.news", NEWS_VER); }catch(_){} updateBadge(); }
 });
 $("#newsClose").addEventListener("click",()=>$("#newsSheet").hidden = true);
@@ -1481,7 +1538,8 @@ $("#shareStop").addEventListener("click",async e=>{ const b = e.currentTarget, p
 
 $("#nameForm").addEventListener("submit",async e=>{ e.preventDefault(); const n = $("#myName").value.trim().slice(0,40);
   myName = n; try{ localStorage.setItem("kosmo.name", n); }catch(_){}
-  if (sb){ const {error} = await sb.auth.updateUser({data:{name:n}}); if (error){ toast("Imena ni bilo mogoče shraniti"); return; } }
+  if (sb){ const {error} = await sb.auth.updateUser({data:{name:n}}); if (error){ toast("Imena ni bilo mogoče shraniti"); return; }
+    try{ await sb.rpc("set_my_name",{p_name:n}); }catch(_){} loadMembers(); }
   toast("Ime shranjeno"); });
 
 $("#rcReasons").addEventListener("click",e=>{ const b = e.target.closest(".btn"); if (!b) return; b.classList.toggle("on"); });
@@ -1588,8 +1646,8 @@ const store = {
     return (await idb.get("tasks","all")) || [];
   },
   async addTask(t){
-    if (cloud){ const {error} = await sb.from("tasks").insert({...t, workshop_id:WS}); if (error) throw error; return; }
-    const all = (await idb.get("tasks","all")) || []; all.push({...t, id:"t"+Date.now().toString(36), created_at:Date.now(), done:false}); await idb.put("tasks","all",all);
+    if (cloud){ const {data,error} = await sb.from("tasks").insert({...t, workshop_id:WS}).select("id").single(); if (error) throw error; return data && data.id; }
+    const all = (await idb.get("tasks","all")) || []; const id = "t"+Date.now().toString(36); all.push({...t, id, created_at:Date.now(), done:false}); await idb.put("tasks","all",all); return id;
   },
   async updateTask(id,patch){
     if (cloud){ const {error} = await sb.from("tasks").update(patch).eq("id",id); if (error) throw error; return; }
@@ -2088,7 +2146,8 @@ $("#listhead-clear").addEventListener("click",e=>{ const b=e.currentTarget;
     await ensureLogin();
     $("#logout").hidden = false;
     try{ const {data:u} = await sb.auth.getUser(); const meta = (u && u.user && u.user.user_metadata) || {};
-      myName = meta.name || (u && u.user && u.user.email ? u.user.email.split("@")[0] : ""); $("#myName").value = meta.name || ""; $("#nameForm").hidden = false; }catch(e){}
+      myName = meta.name || (u && u.user && u.user.email ? u.user.email.split("@")[0] : ""); $("#myName").value = meta.name || ""; $("#nameForm").hidden = false;
+      myId = u && u.user ? u.user.id : null; }catch(e){}
     let mem = (await sb.from("members").select("workshop_id,role,workshops(name,active,trial_until,invite_code)")).data || [];
     if (!mem.length){ await ensureWorkshop(); mem = (await sb.from("members").select("workshop_id,role,workshops(name,active,trial_until,invite_code)")).data || []; }
     const m = mem.find(x=>x.workshops);
@@ -2097,13 +2156,16 @@ $("#listhead-clear").addEventListener("click",e=>{ const b=e.currentTarget;
       projects.length = 0; projects.push(demo); renderProjects(); return;
     }
     WS = m.workshop_id; showWsInfo(m.workshops, m.role);
+    Promise.resolve(sb.rpc("set_my_name",{p_name: myName || ""})).then(()=>loadMembers(),()=>loadMembers());
+    refreshPushSub();
     const sub = document.querySelector(".brand small"); if (sub) sub.textContent = m.workshops.name;
     store.subscribe(()=>refreshProjects(), pid=>{ if (pid===current.id) loadScans(current); }, pid=>{ if (!pid || pid===current.id) loadRecuts(current); }, ()=>loadTasks());
   }
   if (!cloud){ try{ myName = localStorage.getItem("kosmo.name") || ""; }catch(e){} }
   let last = null; try{ last = localStorage.getItem("kjejekos.last"); }catch(e){}
   await refreshProjects(last && last!=="demo" ? last : null);
-  loadTasks();
+  await loadTasks();
+  if (new URLSearchParams(location.search).has("opravila")){ openTasks(); history.replaceState(null,"",location.pathname); }
 })();
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
 
