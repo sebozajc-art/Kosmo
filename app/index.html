@@ -249,6 +249,8 @@ body.viewer .panel{max-height:34vh}
 .filterchip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;text-align:left;border:1px solid color-mix(in srgb,var(--warn) 55%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent);border-radius:12px;padding:9px 12px;margin-bottom:10px;cursor:pointer;font-size:13px;color:var(--muted)}
 .filterchip b{color:var(--ink)} .filterchip span{margin-left:auto;color:var(--warn);font-weight:600}
 .sheet-in.big{max-width:980px;width:100%;min-height:94%;}
+.sheet-in.big #tkForm{order:5} .sheet-in.big #tkShowDoneL{display:none}
+.sheet-in.big > .sheet-actions{order:6}
 @media (min-width:600px){.sheet-in.big{min-height:90%}}
 .tabs{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--hair);border-radius:12px;padding:4px;align-self:flex-start}
 .tabs button{border:0;background:none;border-radius:9px;padding:8px 16px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted)}
@@ -272,7 +274,26 @@ body.viewer .panel{max-height:34vh}
 .cal-d .ev.done{text-decoration:line-through;opacity:.5}
 .cal-d .more{font-size:10.5px;color:var(--muted)}
 @media (max-width:520px){.cal-d{min-height:54px;padding:4px}.cal-d .ev{font-size:0;height:6px;padding:0;border-radius:3px;background:var(--muted)}.cal-d .ev.urg{background:var(--warn)}.cal-d .ev.over{background:var(--warn);opacity:.6}.cal-d .more{font-size:9.5px}}
-.cal-day{font-weight:700;font-size:15px;margin-top:4px}
+.cal-day{font-weight:700;font-size:16px;margin-top:6px;text-transform:capitalize}
+.tl{display:flex;flex-direction:column;border:1px solid var(--hair);border-radius:14px;overflow:hidden}
+.tl-row{display:grid;grid-template-columns:56px 1fr;min-height:46px;border-top:1px solid var(--hair);cursor:pointer}
+.tl-row:first-child{border-top:0}
+.tl-row:hover{background:rgba(255,255,255,.02)}
+.tl-row.now{box-shadow:inset 3px 0 0 var(--hit)}
+.tl-row.allday{cursor:default;background:var(--surface-2)}
+.tl-l{font-family:var(--f-mono);font-size:12px;color:var(--faint);padding:8px 8px 0;border-right:1px solid var(--hair)}
+.tl-row.now .tl-l{color:var(--hit-2);font-weight:700}
+.tl-c{display:flex;flex-direction:column;gap:4px;padding:4px 6px;min-width:0}
+.tl-c .hint{font-size:12px;color:var(--faint);padding:8px 2px;opacity:0;transition:opacity .15s}
+.tl-row:hover .hint{opacity:1}
+@media (pointer:coarse){.tl-c .hint{opacity:.55}}
+.tl-ev{border-top:0!important;padding:6px 8px!important;border-radius:10px;background:var(--hit-soft);border-left:3px solid var(--hit)!important}
+.tl-ev.urgent{background:color-mix(in srgb,var(--warn) 18%,transparent);border-left-color:var(--warn)!important}
+.tl-ev.done{opacity:.55}
+.tl-form{display:flex;gap:6px;flex-wrap:wrap;padding:2px 0}
+.tl-form input{flex:1 1 160px;min-width:0;border:1px solid var(--hit);background:var(--solid);border-radius:10px;padding:9px 10px;font-size:15px}
+.tl-form select{border:1px solid var(--hair);background:var(--solid);border-radius:10px;padding:8px;font-size:14px}
+.tl-form .btn{padding:8px 14px}
 .taskstrip{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--muted)}
 .taskstrip b{color:var(--ink)} .taskstrip .over{color:var(--warn);font-weight:700}
 .news{display:flex;flex-direction:column;gap:12px}
@@ -431,7 +452,7 @@ html{padding-top:env(safe-area-inset-top,0px)}
     <form class="tk-add" id="tkForm">
       <input type="text" id="tkTitle" placeholder="Kaj je treba narediti? npr. Razrez otok – stanovanje mama" maxlength="140" required aria-label="Opravilo">
       <div class="quick" id="tkQuick"><button type="button" class="btn" data-d="0">Danes</button><button type="button" class="btn" data-d="1">Jutri</button><button type="button" class="btn" data-d="fri">Ta petek</button><button type="button" class="btn" data-d="7">Čez teden</button><button type="button" class="btn" data-d="">Brez roka</button></div>
-      <div class="tk-row"><input type="date" id="tkDue" aria-label="Rok"><label><input type="checkbox" id="tkUrgent">Nujno</label></div>
+      <div class="tk-row"><input type="date" id="tkDue" aria-label="Rok"><input type="time" id="tkTime" aria-label="Ura (neobvezno)" style="flex:0 1 120px"><label><input type="checkbox" id="tkUrgent">Nujno</label></div>
       <div class="tk-row"><select id="tkProj" aria-label="Projekt"></select><input class="as" id="tkWho" placeholder="Kdo (neobvezno)" maxlength="40" aria-label="Kdo"></div>
       <div class="sheet-actions" style="justify-content:flex-start"><button class="btn primary" type="submit">Dodaj opravilo</button><span class="status" id="tkMsg"></span></div>
     </form>
@@ -445,6 +466,7 @@ html{padding-top:env(safe-area-inset-top,0px)}
   <div class="sheet-in">
     <h3>Kaj je novega</h3>
     <div class="news">
+      <div><b>Časovnica dneva</b><span>V koledarju tapneš dan in vidiš ure od 6.00 do 20.00. Tapni uro in napiši, kaj je treba narediti.</span></div>
       <div><b>Koledar opravil</b><span>V Opravilih preklopiš na Koledar: cel mesec na velikem zaslonu, tap na dan pokaže in doda opravila za tisti dan.</span></div>
       <div><b>Filter za popravilo in neposkenirane</b><span>V meniju izbereš »Za popravilo« ali »Še ni skenirano«. Seznam in 3D pokažeta samo te kose.</span></div>
       <div><b>Prosojen pogled</b><span>Gumb s kocko zdaj naredi celo kuhinjo prosojno, da vidiš skozi omarice.</span></div>
@@ -1212,6 +1234,11 @@ const CHK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 const dayStr = d => { const x = new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); };
 const todayStr = () => dayStr(new Date());
 function dueInfo(t){
+  const r = dueInfo0(t); if (t.at_time && t.due) r.txt += " " + t.at_time; return r;
+}
+const fmtRange = t => t.at_time ? (t.dur_min ? `${t.at_time}–${addMin(t.at_time,t.dur_min)}` : t.at_time) : "";
+const addMin = (hm,m) => { const [h,mi] = hm.split(":").map(Number), x = h*60+mi+Number(m); return `${String(Math.floor(x/60)%24).padStart(2,"0")}:${String(x%60).padStart(2,"0")}`; };
+function dueInfo0(t){
   if (!t.due) return {cls:"", txt:"brez roka", grp:4};
   const today = new Date(todayStr()), d = new Date(t.due), diff = Math.round((d-today)/864e5);
   const wd = ["ned","pon","tor","sre","čet","pet","sob"][d.getDay()];
@@ -1256,6 +1283,45 @@ function renderCal(){
   if (calSel){ const d = new Date(calSel); $("#calDayTitle").textContent = d.toLocaleDateString("sl-SI",{weekday:"long", day:"numeric", month:"long"}); }
   else $("#calDayTitle").textContent = "Tapni dan za opravila tistega dne";
 }
+// časovnica izbranega dne: ure od 6.00 do 20.00 (razširi se, če je opravilo prej ali kasneje)
+function evHTML(t){
+  const proj = t.project_id && projects.find(p=>p.id===t.project_id);
+  const sub = [fmtRange(t), proj && proj.name, t.assignee && "👤 "+t.assignee].filter(Boolean).map(esc).join(" · ");
+  return `<div class="tk tl-ev${t.done?" done":""}${t.urgent&&!t.done?" urgent":""}" data-id="${esc(t.id)}"><button type="button" class="ck${t.done?" on":""}" data-ck aria-label="Opravljeno">${t.done?CHK:""}</button>
+    <div class="t"><b>${t.urgent&&!t.done?'<span class="urg">nujno</span>':""}${esc(t.title)}</b>${sub?`<small>${sub}</small>`:""}</div><div><button type="button" class="del" data-del>Izbriši</button></div></div>`;
+}
+function timelineHTML(list){
+  const untimed = list.filter(t=>!t.at_time), timed = list.filter(t=>t.at_time);
+  const hrs = timed.map(t=>parseInt(t.at_time,10)).filter(n=>!isNaN(n));
+  const h0 = Math.min(6, ...hrs), h1 = Math.max(20, ...hrs);
+  const now = new Date(), isToday = calSel===todayStr();
+  let h = `<div class="tl"><div class="tl-row allday"><span class="tl-l">cel dan</span><div class="tl-c">${untimed.map(evHTML).join("") || '<span class="hint" style="opacity:.6">Brez opravil brez ure</span>'}</div></div>`;
+  for (let i=h0;i<=h1;i++){
+    const hh = String(i).padStart(2,"0");
+    const evs = timed.filter(t=>parseInt(t.at_time,10)===i).sort((a,b)=>a.at_time.localeCompare(b.at_time));
+    h += `<div class="tl-row${isToday && now.getHours()===i?" now":""}" data-h="${hh}"><span class="tl-l">${hh}:00</span><div class="tl-c">${evs.map(evHTML).join("")}<span class="hint">+ tapni za novo opravilo ob ${i}.00</span></div></div>`;
+  }
+  return h + `</div>`;
+}
+function openSlot(row){
+  const c = row.querySelector(".tl-c"); if (c.querySelector(".tl-form")) return;
+  document.querySelectorAll(".tl-form").forEach(f=>f.remove());
+  const hh = row.dataset.h, f = document.createElement("form"); f.className = "tl-form";
+  f.innerHTML = `<input placeholder="Kaj ob ${parseInt(hh,10)}.00? npr. razrez otok" maxlength="140" aria-label="Opravilo">
+    <select aria-label="Trajanje"><option value="">brez trajanja</option><option value="30">30 min</option><option value="60" selected>1 ura</option><option value="120">2 uri</option><option value="180">3 ure</option><option value="240">4 ure</option><option value="480">8 ur</option></select>
+    <label class="check" style="font-size:13px"><input type="checkbox">Nujno</label><button class="btn primary" type="submit">Dodaj</button><button class="btn ghost" type="button" data-x>✕</button>`;
+  c.prepend(f); const inp = f.querySelector("input"); inp.focus();
+  f.querySelector("[data-x]").addEventListener("click",ev=>{ ev.stopPropagation(); f.remove(); });
+  f.addEventListener("click",ev=>ev.stopPropagation());
+  f.addEventListener("submit",async ev=>{
+    ev.preventDefault(); const title = inp.value.trim(); if (!title){ inp.focus(); return; }
+    const t = {title, due: calSel, at_time: hh+":00", dur_min: Number(f.querySelector("select").value)||null, urgent: f.querySelector("input[type=checkbox]").checked,
+      project_id: $("#tkProj").value || null, assignee: null, created_by: myName || null};
+    f.querySelector("button[type=submit]").disabled = true;
+    try{ await store.addTask(t); toast(`Dodano ob ${parseInt(hh,10)}.00`); await loadTasks(); }
+    catch(err){ toast("Ni bilo mogoče shraniti"); f.querySelector("button[type=submit]").disabled = false; }
+  });
+}
 function setTkTab(tab){
   tkTab = tab; const cal = tab==="cal";
   $("#tasksIn").classList.toggle("big", cal);
@@ -1270,8 +1336,9 @@ function renderTasks(){
   if (tkTab==="cal") renderCal();
   const showDone = $("#tkShowDone").checked || tkTab==="cal";
   const items = tasks.filter(t=>showDone || !t.done).filter(t=>tkTab!=="cal" || t.due===calSel).map(t=>({t, d:dueInfo(t)}))
-    .sort((a,b)=>(a.t.done-b.t.done) || (a.d.grp-b.d.grp) || ((b.t.urgent?1:0)-(a.t.urgent?1:0)) || String(a.t.due||"").localeCompare(String(b.t.due||"")));
-  if (!items.length){ list.innerHTML = `<div class="empty-msg" style="padding:8px 0">${tkTab==="cal" ? "Ta dan ni opravil. Dodaj ga zgoraj." : "Ni odprtih opravil."}</div>`; return; }
+    .sort((a,b)=>(a.t.done-b.t.done) || (a.d.grp-b.d.grp) || ((b.t.urgent?1:0)-(a.t.urgent?1:0)) || String(a.t.due||"").localeCompare(String(b.t.due||"")) || String(a.t.at_time||"99").localeCompare(String(b.t.at_time||"99")));
+  if (tkTab==="cal"){ list.innerHTML = timelineHTML(items.map(x=>x.t)); return; }
+  if (!items.length){ list.innerHTML = `<div class="empty-msg" style="padding:8px 0">Ni odprtih opravil.</div>`; return; }
   const names = ["Zamujeno","Danes","Ta teden","Kasneje","Brez roka"]; let g = -1, h = "";
   for (const {t,d} of items){
     const grp = t.done ? 9 : d.grp;
@@ -1306,19 +1373,22 @@ $("#calPrev").addEventListener("click",()=>{ calMonth = new Date(calMonth.getFul
 $("#calNext").addEventListener("click",()=>{ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderCal(); });
 $("#calToday").addEventListener("click",()=>{ const d = new Date(); calMonth = new Date(d.getFullYear(), d.getMonth(), 1); calSel = todayStr(); $("#tkDue").value = calSel; renderTasks(); });
 $("#calGrid").addEventListener("click",e=>{ const c = e.target.closest("[data-day]"); if (!c) return; calSel = c.dataset.day; $("#tkDue").value = calSel;
-  $("#tkQuick").querySelectorAll(".btn").forEach(b=>b.classList.remove("primary")); renderTasks(); });
+  $("#tkQuick").querySelectorAll(".btn").forEach(b=>b.classList.remove("primary")); renderTasks();
+  const tl = $("#calDayTitle"); tl && tl.scrollIntoView({block:"start", behavior:"smooth"}); });
 $("#tkClose").addEventListener("click",()=>$("#tasksSheet").hidden = true);
 $("#taskStrip").addEventListener("click",openTasks);
 $("#tkForm").addEventListener("submit",async e=>{
   e.preventDefault();
   const title = $("#tkTitle").value.trim(); if (!title) return;
-  const t = {title, due: $("#tkDue").value || null, urgent: $("#tkUrgent").checked, project_id: $("#tkProj").value || null, assignee: $("#tkWho").value.trim() || null, created_by: myName || null};
+  const t = {title, due: $("#tkDue").value || null, at_time: $("#tkTime").value || null, urgent: $("#tkUrgent").checked, project_id: $("#tkProj").value || null, assignee: $("#tkWho").value.trim() || null, created_by: myName || null};
   const btn = e.submitter; btn && (btn.disabled = true); $("#tkMsg").textContent = "Shranjujem …"; $("#tkMsg").className = "status";
-  try{ await store.addTask(t); $("#tkTitle").value = ""; $("#tkUrgent").checked = false; $("#tkWho").value = ""; $("#tkMsg").textContent = "Dodano"; $("#tkMsg").className = "status ok"; await loadTasks(); }
+  try{ await store.addTask(t); $("#tkTitle").value = ""; $("#tkTime").value = ""; $("#tkUrgent").checked = false; $("#tkWho").value = ""; $("#tkMsg").textContent = "Dodano"; $("#tkMsg").className = "status ok"; await loadTasks(); }
   catch(err){ $("#tkMsg").textContent = /relation|does not exist|schema cache/i.test(err.message||"") ? "Opravila v bazi še niso pripravljena (zaženi posodobitev-4.sql)." : "Ni bilo mogoče shraniti: " + (err.message||err); $("#tkMsg").className = "status err"; }
   finally{ btn && (btn.disabled = false); }
 });
 $("#tkList").addEventListener("click",async e=>{
+  const slot = e.target.closest(".tl-row[data-h]");
+  if (slot && !e.target.closest(".tk")){ openSlot(slot); return; }
   const row = e.target.closest(".tk"); if (!row) return; const t = tasks.find(x=>String(x.id)===row.dataset.id); if (!t) return;
   if (e.target.closest("[data-ck]")){
     const done = !t.done; t.done = done; t.done_at = done ? Date.now() : null; renderTasks(); renderTaskStrip(); updateBadge();
@@ -1335,7 +1405,7 @@ $("#tkList").addEventListener("click",async e=>{
 });
 
 // ---------- meni
-const NEWS_VER = "2026-11-02f";
+const NEWS_VER = "2026-11-02g";
 function renderMenu(){
   const shared = current && current.saved && cloud;
   const items = [

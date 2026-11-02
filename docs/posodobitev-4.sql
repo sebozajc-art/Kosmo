@@ -25,3 +25,7 @@ grant select, insert, update, delete on public.tasks to authenticated;
 do $$ begin
   alter publication supabase_realtime add table public.tasks;
 exception when others then null; end $$;
+
+-- ura in trajanje opravila (časovnica dneva)
+alter table public.tasks add column if not exists at_time text;
+alter table public.tasks add column if not exists dur_min int;
