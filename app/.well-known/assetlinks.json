@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "si.kosmo.app",
+        "sha256_cert_fingerprints": ["72:F7:EE:84:F2:FE:46:90:E3:68:0A:DC:D8:B8:76:F3:11:CC:BA:8E:61:41:92:11:34:A1:3F:B8:AB:E2:D6:97"]
+      }
+    }]
