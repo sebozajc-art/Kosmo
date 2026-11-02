@@ -246,6 +246,8 @@ body.viewer .panel{max-height:34vh}
 .tk .urg{display:inline-block;background:var(--warn);color:#1a0d08;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 .tk .del{background:none;border:0;color:var(--faint);cursor:pointer;font-size:12px;padding:4px 0}
 .tk .del.armed{color:var(--warn)}
+.filterchip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;text-align:left;border:1px solid color-mix(in srgb,var(--warn) 55%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent);border-radius:12px;padding:9px 12px;margin-bottom:10px;cursor:pointer;font-size:13px;color:var(--muted)}
+.filterchip b{color:var(--ink)} .filterchip span{margin-left:auto;color:var(--warn);font-weight:600}
 .taskstrip{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:10px 14px;cursor:pointer;font-size:14px;color:var(--muted)}
 .taskstrip b{color:var(--ink)} .taskstrip .over{color:var(--warn);font-weight:700}
 .news{display:flex;flex-direction:column;gap:12px}
@@ -360,6 +362,7 @@ html{padding-top:env(safe-area-inset-top,0px)}
         <button class="btn ghost" type="button" id="listhead-clear" style="padding:4px 8px;font-size:12px">Počisti</button>
       </div>
       <div class="bar" style="margin:10px 0 12px"><i id="barfill"></i></div>
+      <button type="button" class="filterchip" id="filterChip" hidden>Prikazani so <b></b><span>✕ pokaži vse</span></button>
       <input id="filter" class="search" placeholder="Išči po kodi, imenu ali elementu" aria-label="Išči kose">
       <div id="list"></div>
     </div>
@@ -410,6 +413,8 @@ html{padding-top:env(safe-area-inset-top,0px)}
   <div class="sheet-in">
     <h3>Kaj je novega</h3>
     <div class="news">
+      <div><b>Filter za popravilo in neposkenirane</b><span>V meniju izbereš »Za popravilo« ali »Še ni skenirano«. Seznam in 3D pokažeta samo te kose.</span></div>
+      <div><b>Prosojen pogled</b><span>Gumb s kocko zdaj naredi celo kuhinjo prosojno, da vidiš skozi omarice.</span></div>
       <div><b>Opravila z rokom</b><span>Kaj je treba narediti in do kdaj, z oznako nujno in kdo naj naredi. Zamujena so označena rdeče.</span></div>
       <div><b>Meni</b><span>Vse na enem mestu: projekti, razrez, montaža, deljenje in delavnica.</span></div>
       <div><b>Povezava za stranko</b><span>Projekt deliš s stranko, ki si kuhinjo ogleda v 3D brez prijave.</span></div>
@@ -620,11 +625,19 @@ const projects = [buildDemo()];
 let current = projects[0];
 let selected = null;
 let selEl = null;   // izbrana omarica (element); ob izbranem kosu je to njegova omarica
-let viewMode = (()=>{ try{ return localStorage.getItem("kosmo.view") || "xray"; }catch(e){ return "xray"; } })();
+let viewMode = (()=>{ try{ return localStorage.getItem("kosmo.view2") || "solid"; }catch(e){ return "solid"; } })();
 const elKey = p => p ? String(p.el ?? p.element ?? "") : "";
 const VIEW_TOKEN = new URLSearchParams(location.search).get("ogled");
 const VIEWER = !!VIEW_TOKEN;
-let montage = false, myName = "", viewIntro = "";
+let montage = false, myName = "", viewIntro = "", listFilter = null;   // null | "recut" | "missing"
+function inFilter(p){ if (!listFilter || !p) return true;
+  if (listFilter==="recut") return recuts.some(r=>partOfRecut(r)===p);
+  if (listFilter==="missing") return !scannedSet().has(p.code); return true; }
+function setListFilter(f){
+  listFilter = f; renderList(); restyle();
+  const c = $("#filterChip"); if (c){ c.hidden = !f; c.querySelector("b").textContent = f==="recut" ? "samo kosi za popravilo" : f==="missing" ? "samo neposkenirani kosi" : ""; }
+  if (f){ const panel = document.querySelector(".panel"), w = document.querySelector(".listwrap"); panel && w && panel.scrollTo({top: w.offsetTop - 12}); if (has3D && root && !selected) fitAll(); }
+}
 const scanInfo = new Map();   // projectId -> Map(code -> {by, at})
 const elParts = k => current.parts.filter(q=>elKey(q)===k);
 const scanned = new Map(); // projectId -> Set
@@ -781,7 +794,8 @@ function restyle(){
   root.traverse(o=>{
     if (!o.isMesh || !o.userData || o.userData.isBand) return;
     const focus = selEl!=null, xray = viewMode==="xray";
-    if (o.userData.extra){ const wallX = o.userData.extra==="wall"; o.material.opacity = focus ? (xray?(wallX?.06:.05):(wallX?.2:.3)) : (wallX?.5:1); o.material.depthWrite = !focus && !wallX; return; }
+    const filt = !focus && listFilter;
+    if (o.userData.extra){ const wallX = o.userData.extra==="wall"; o.material.opacity = (focus||filt) ? (xray?(wallX?.06:.05):(wallX?.2:.3)) : xray ? (wallX?.15:.25) : (wallX?.5:1); o.material.depthWrite = !focus && !filt && !wallX && !xray; return; }
     const base = new THREE.Color(o.userData.color || (MATS[o.userData.mat]||MATS._).color), glass = (MATS[o.userData.mat]||{}).glass;
     const part = o.userData.part, code = o.userData.code, isSel = !!selected && part===selected;
     const inEl = focus && part && elKey(part)===selEl;
@@ -791,7 +805,14 @@ function restyle(){
     edge && edge.material.color.copy(edgeCol);
     mat.emissive.setRGB(0,0,0); o.renderOrder = 0;
     if (isSel){ mat.color.set("#C9CDD1").lerp(base,.15); if(!xray) mat.emissive.set(hit).multiplyScalar(.18); mat.opacity=1; mat.depthWrite=true; o.renderOrder=2; o.castShadow=true; edge&&(edge.material.color.setRGB(1,1,1), edge.material.opacity=.85); }
-    else if (!focus){ mat.color.copy(normal()); mat.opacity = glass?.35:1; mat.depthWrite=!glass; o.castShadow=!glass; edge&&(edge.material.opacity=.12); }
+    else if (filt){   // prikazani samo kosi iz filtra (popravilo / neposkenirani)
+      if (inFilter(part)){ mat.color.copy(normal()); if (listFilter==="recut") mat.emissive.set(warnCol).multiplyScalar(.25); mat.opacity=1; mat.depthWrite=true; o.castShadow=true; o.renderOrder=2; edge&&(edge.material.opacity=.6); }
+      else { mat.color.copy(ghost); mat.opacity=.05; mat.depthWrite=false; o.castShadow=false; edge&&(edge.material.opacity=.1); }
+    }
+    else if (!focus){
+      if (xray){ mat.color.copy(normal()); mat.opacity = .22; mat.depthWrite=false; o.castShadow=false; edge&&(edge.material.opacity=.55); }   // prosojno: vidiš skozi omarice
+      else { mat.color.copy(normal()); mat.opacity = glass?.35:1; mat.depthWrite=!glass; o.castShadow=!glass; edge&&(edge.material.opacity=.12); }
+    }
     else if (xray){   // prosojno: omarica kot obris, ostalo skoraj nevidno
       if (inEl){ mat.color.copy(base); mat.opacity = selected ? .13 : .42; mat.depthWrite=false; o.castShadow=false; o.renderOrder=1; edge&&(edge.material.opacity=selected?.5:.6); }
       else { mat.color.copy(ghost); mat.opacity=.04; mat.depthWrite=false; o.castShadow=false; edge&&(edge.material.opacity=.1); }
@@ -1006,6 +1027,7 @@ function renderList(){
   const groups = new Map();
   for (const p of current.parts){
     if (q && !(p.code+" "+p.name+" "+(p.element||"")).toLowerCase().includes(q)) continue;
+    if (!inFilter(p)) continue;
     const k = elKey(p);
     if (!groups.has(k)) groups.set(k,[]);
     groups.get(k).push(p);
@@ -1146,7 +1168,7 @@ $("#resetView").addEventListener("click",()=>{ if (selEl!=null) flyToEl(selEl, s
 function syncViewBtn(){ const b = $("#viewMode"), x = viewMode==="xray"; b.classList.toggle("on", x); b.setAttribute("aria-pressed", String(x)); b.setAttribute("aria-label", x?"Prosojen pogled (vklopljen)":"Prosojen pogled (izklopljen)"); }
 $("#viewMode").addEventListener("click",()=>{
   viewMode = viewMode==="xray" ? "solid" : "xray";
-  try{ localStorage.setItem("kosmo.view", viewMode); }catch(e){}
+  try{ localStorage.setItem("kosmo.view2", viewMode); }catch(e){}
   syncViewBtn(); restyle(); toast(viewMode==="xray" ? "Prosojen pogled" : "Poln 3D pogled");
 });
 syncViewBtn();
@@ -1244,14 +1266,14 @@ $("#tkList").addEventListener("click",async e=>{
 });
 
 // ---------- meni
-const NEWS_VER = "2026-11-02d";
+const NEWS_VER = "2026-11-02e";
 function renderMenu(){
   const shared = current && current.saved && cloud;
   const items = [
     ["projects", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>', "Projekti", "Odpri, uvozi ali izbriši projekt", ""],
     ["tasks", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18M8 15l2.5 2.5L16 13"/></svg>', "Opravila", tasks.filter(t=>!t.done).length ? `${tasks.filter(t=>!t.done).length} odprtih` : "Kaj je treba narediti in do kdaj", openTasksCount() ? `<span class="r warn">${openTasksCount()}</span>` : ""],
-    ["recuts", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg>', "Za ponoven razrez", recuts.length ? "Seznam poškodovanih kosov" : "Ni kosov za razrez", recuts.length ? `<span class="r warn">${recuts.length}</span>` : ""],
-    ["missing", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>', "Skenirano", "Napredek projekta", `<span class="r">${current.parts.filter(q=>scannedSet().has(q.code)).length} / ${current.parts.length}</span>`],
+    ["recuts", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg>', "Za popravilo (ponoven razrez)", recuts.length ? "Pokaži samo te kose v seznamu in 3D" : "Ni kosov za popravilo", recuts.length ? `<span class="r warn">${recuts.length}</span>` : ""],
+    ["missing", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>', "Še ni skenirano", "Pokaži samo neposkenirane kose", `<span class="r">${current.parts.filter(q=>scannedSet().has(q.code)).length} / ${current.parts.length}</span>`],
     ["montage", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8l2-1v10M9.5 17h5"/></svg>', "Številke omaric", "Vrstni red montaže v 3D", `<span class="r${montage?" on":""}">${montage?"vklop":"izklop"}</span>`],
     ["xray", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>', "Prosojen pogled", "Preklop med prosojnim in polnim 3D", `<span class="r${viewMode==="xray"?" on":""}">${viewMode==="xray"?"vklop":"izklop"}</span>`],
     ...(shared ? [["share", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>', "Pokaži stranki", "Povezava za ogled projekta v 3D", current.shareToken ? '<span class="r on">deljeno</span>' : ""]] : []),
@@ -1273,13 +1295,15 @@ $("#menuSheet").addEventListener("click",e=>{
   if (k==="xray"){ $("#viewMode").click(); renderMenu(); return; }
   $("#menuSheet").hidden = true;
   if (k==="projects" || k==="workshop"){ $("#openProjects").click(); if (k==="workshop") setTimeout(()=>{ const w = $("#wsInfo"); w && w.scrollIntoView({block:"start"}); },50); }
-  else if (k==="recuts"){ if (!recuts.length){ toast("Ni kosov za ponoven razrez"); return; } const panel = document.querySelector(".panel"), box = $("#recuts"); panel.scrollTo({top: box.offsetTop - 12}); }
-  else if (k==="missing"){ const panel = document.querySelector(".panel"), w = document.querySelector(".listwrap"); panel.scrollTo({top: w.offsetTop - 12}); }
+  else if (k==="recuts"){ if (!recuts.length){ toast("Ni kosov za popravilo"); return; } select(null,{fly:false}); setListFilter("recut"); }
+  else if (k==="missing"){ select(null,{fly:false}); setListFilter("missing"); }
   else if (k==="share"){ openShare(current); }
   else if (k==="tasks"){ openTasks(); }
   else if (k==="news"){ $("#newsSheet").hidden = false; try{ localStorage.setItem("kosmo.news", NEWS_VER); }catch(_){} updateBadge(); }
 });
 $("#newsClose").addEventListener("click",()=>$("#newsSheet").hidden = true);
+$("#filterChip").addEventListener("click",()=>{ setListFilter(null); });
+$("#rcTitle").style.cursor = "pointer"; $("#rcTitle").addEventListener("click",()=>setListFilter(listFilter==="recut"?null:"recut"));
 
 function syncMontageBtn(){ const b = $("#montage"); b.classList.toggle("on",montage); b.setAttribute("aria-pressed",String(montage)); }
 $("#montage").addEventListener("click",()=>{ montage = !montage; try{ localStorage.setItem("kosmo.montage", montage?"1":"0"); }catch(e){}
@@ -1466,7 +1490,7 @@ function renderRecuts(){
   const box = $("#recuts"); if (!box) return;
   try{ updateBadge(); }catch(e){}
   box.hidden = !recuts.length;
-  $("#rcTitle").textContent = `Za ponoven razrez (${recuts.length})`;
+  $("#rcTitle").textContent = `Za popravilo (${recuts.length}) ›`;
   $("#rcList").innerHTML = recuts.map((r,i)=>{ const q = r.part||{};
     return `<div class="rc">${r.photo?`<img src="${esc(r.photo)}" alt="Fotografija" data-big="${i}">`:""}
       <div class="t"><b>${esc(q.name||r.code)}</b> · ${esc(q.element||"")}
@@ -1481,6 +1505,7 @@ function recutText(){
 }
 async function markRecutDone(r){
   recuts = recuts.filter(x=>x!==r); renderRecuts(); renderCard(); restyle();
+  if (listFilter==="recut"){ recuts.length ? renderList() : setListFilter(null); }
   try{ await store.doneRecut(current.id, r.id); toast("Označeno kot opravljeno"); }catch(e){ toast("Ni bilo mogoče shraniti."); loadRecuts(current); }
 }
 function showImg(src){ const v = document.createElement("div"); v.className = "imgview"; v.innerHTML = `<img alt="Fotografija kosa">`; v.querySelector("img").src = src; v.addEventListener("click",()=>v.remove()); document.body.append(v); }
@@ -1531,7 +1556,7 @@ async function refreshProjects(openId){
   else { current = target; renderProjects(); }
 }
 function openProject(p){
-  current = p || demo; selected = null; selEl = null; recuts = []; renderRecuts(); setStatus(current.note||"");
+  current = p || demo; selected = null; selEl = null; recuts = []; listFilter = null; const fc = $("#filterChip"); fc && (fc.hidden = true); renderRecuts(); setStatus(current.note||"");
   renderProjects(); loadProject3D(current); renderCard(); renderList(); watchScans();
   try{ localStorage.setItem("kjejekos.last", current.id); }catch(e){}
 }
