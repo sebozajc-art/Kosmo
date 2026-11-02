@@ -15,9 +15,12 @@ create table if not exists public.tasks (
 );
 create index if not exists tasks_ws on public.tasks(workshop_id, done, due);
 alter table public.tasks enable row level security;
-drop policy if exists "opravila delavnice" on public.tasks;
-create policy "opravila delavnice" on public.tasks for all to authenticated
-  using (public.is_member(workshop_id)) with check (public.is_member(workshop_id));
+do $$ begin
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='tasks' and policyname='opravila delavnice') then
+    create policy "opravila delavnice" on public.tasks for all to authenticated
+      using (public.is_member(workshop_id)) with check (public.is_member(workshop_id));
+  end if;
+end $$;
 grant select, insert, update, delete on public.tasks to authenticated;
 do $$ begin
   alter publication supabase_realtime add table public.tasks;
