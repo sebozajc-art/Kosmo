@@ -1,0 +1,17 @@
+{
+  "name": "Kosmo",
+  "short_name": "Kosmo",
+  "description": "Skeniraj etiketo kosa in v 3D modelu vidiš, kje stoji.",
+  "lang": "sl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0C0E10",
+  "theme_color": "#0C0E10",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

@@ -1,0 +1,1385 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kosmo</title>
+<meta name="theme-color" content="#0C0E10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kosmo">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: temen »razstavni prostor« z modelom, steklene plošče nad njim; en sam premišljen temni videz z oranžnim poudarkom */
+:root{
+  --bg:#0C0E10; --stage-a:#2B3036; --stage-b:#0C0E10; --glow:rgba(255,106,31,.10);
+  --surface:rgba(24,27,31,.84); --solid:#181B1F; --surface-2:rgba(255,255,255,.05); --hair:rgba(255,255,255,.08); --line:rgba(255,255,255,.10);
+  --ink:#F1F2F3; --muted:#8E979F; --faint:#5B636B;
+  --hit:#FF6A1F; --hit-2:#FF8F4A; --hit-soft:rgba(255,106,31,.12); --accent:#FF9B63; --accent-soft:rgba(255,155,99,.12);
+  --ok:#5CCB91; --warn:#FF8466;
+  --wall:#1B1F23; --ghost:#9AA3AB; --edge:#E9ECEF;
+  --shadow:0 18px 50px rgba(0,0,0,.45);
+  --f-display:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;overflow:hidden;-webkit-font-smoothing:antialiased;font-feature-settings:"ss01"}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--hit);outline-offset:2px}
+
+.app{height:100%;display:grid;grid-template-rows:minmax(300px,1fr) auto;
+  background:radial-gradient(90% 60% at 50% 38%,var(--glow),transparent 70%),radial-gradient(120% 90% at 50% 30%,var(--stage-a) 0%,var(--stage-b) 100%)}
+@media (min-width:900px){
+  .app{grid-template-columns:1fr 430px;grid-template-rows:1fr}
+  .panel{margin:16px 16px 16px 0!important;border-radius:24px!important;max-height:none!important;border:1px solid var(--hair)!important}
+  .grab{display:none}
+}
+
+/* ---- 3D prostor ---- */
+.stage{position:relative;min-height:0;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+header{position:absolute;inset:0 0 auto;z-index:2;display:flex;align-items:center;gap:10px;
+  padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:12px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mark{width:36px;height:36px;border-radius:11px;flex:none;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(145deg,var(--hit-2),var(--hit));box-shadow:0 6px 18px rgba(255,106,31,.35),inset 0 1px 0 rgba(255,255,255,.35);
+  font-family:var(--f-display);font-weight:800;font-size:18px;font-stretch:115%}
+.brand{font-family:var(--f-display);font-weight:700;font-stretch:118%;font-size:17px;line-height:1;letter-spacing:-.005em;margin-right:auto;min-width:0}
+.brand small{display:block;font-family:var(--f-body);font-weight:500;font-stretch:100%;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:5px;white-space:nowrap}
+.pill-select{position:relative;min-width:0;max-width:46%}
+.pill-select select{appearance:none;-webkit-appearance:none;width:100%;background:var(--surface);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--hair);border-radius:99px;padding:9px 32px 9px 15px;font-weight:600;font-size:13px;text-overflow:ellipsis;cursor:pointer}
+.pill-select select option{background:var(--solid)}
+.pill-select::after{content:"";position:absolute;right:14px;top:50%;width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.iconbtn{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:99px;border:1px solid var(--hair);
+  background:var(--surface);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);cursor:pointer;color:var(--ink);transition:border-color .15s,color .15s}
+.iconbtn:hover{border-color:var(--hit);color:var(--hit-2)}
+.iconbtn svg{width:18px;height:18px}
+.stage-tools{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:36px;display:flex;flex-direction:column;gap:8px;z-index:2}
+.stage-hint{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:38px;font-size:11px;letter-spacing:.06em;color:var(--faint);pointer-events:none;z-index:2;text-transform:uppercase}
+.no3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)}
+
+/* ---- plošča ---- */
+.panel{position:relative;z-index:3;background:var(--surface);backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);
+  border-top:1px solid var(--hair);overflow:auto;max-height:55vh;margin-top:-24px;border-radius:26px 26px 0 0;box-shadow:var(--shadow);
+  padding-block:10px calc(22px + env(safe-area-inset-bottom,0px));padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:18px;scrollbar-width:thin}
+@media (min-width:900px){.panel{padding-top:20px}}
+.grab{width:38px;height:4px;border-radius:4px;background:var(--line);margin:0 auto;flex:none}
+
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:9px 15px;font-weight:600;cursor:pointer;white-space:nowrap;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:linear-gradient(145deg,var(--hit-2),var(--hit));color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(255,106,31,.28)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink)}
+
+.scanrow{display:flex;flex-direction:column;gap:10px}
+.scanbtn{position:relative;display:flex;align-items:center;justify-content:center;gap:14px;border-radius:18px;min-height:60px;padding:12px 20px;cursor:pointer;user-select:none;
+  background:linear-gradient(145deg,var(--hit-2),var(--hit));color:#fff;
+  box-shadow:0 12px 30px rgba(255,106,31,.32),inset 0 1px 0 rgba(255,255,255,.3);
+  font-family:var(--f-display);font-weight:700;font-stretch:115%;font-size:17px;letter-spacing:.02em;text-transform:uppercase;transition:transform .12s}
+.scanbtn:active{transform:scale(.985)}
+.scanbtn .ic{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.18);display:grid;place-items:center}
+.scanbtn .ic svg{width:20px;height:20px}
+.scanbtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.manual{display:flex;align-items:center;background:var(--surface-2);border:1px solid var(--hair);border-radius:14px;padding:5px 5px 5px 14px}
+.manual input{flex:1;min-width:0;border:0;background:transparent;padding:7px 0;font-family:var(--f-mono);font-size:14px;outline:none}
+.manual input::placeholder{color:var(--faint)}
+.manual .btn{padding:8px 16px;border-radius:10px}
+.status{font-size:13px;color:var(--muted);min-height:1.2em;padding-left:2px}
+.status.err{color:var(--warn)} .status.ok{color:var(--ok)}
+
+.card{border:1px solid var(--hair);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:16px;background:var(--surface-2)}
+.card.found{border-color:rgba(255,106,31,.35);background:radial-gradient(120% 80% at 0% 0%,rgba(255,106,31,.16),transparent 60%),var(--surface-2)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chip{font-family:var(--f-mono);font-weight:600;font-size:12px;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:8px;overflow-wrap:anywhere;letter-spacing:.02em}
+.tag{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.tag.ok{color:var(--ok)} .tag i{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 20%,transparent)}
+.pname{font-family:var(--f-display);font-weight:700;font-stretch:112%;font-size:26px;line-height:1.05;letter-spacing:-.01em;text-wrap:balance;margin:0}
+.pelem{color:var(--muted);font-weight:500;margin-top:6px;font-size:14px}
+.card-body{display:grid;grid-template-columns:172px 1fr;gap:18px;align-items:center}
+@media (max-width:360px){.card-body{grid-template-columns:1fr}}
+.diagram{width:100%;height:auto;display:block;overflow:visible}
+.diagram text{font-family:var(--f-mono);font-weight:600;font-size:10.5px;fill:var(--ink)}
+.diagram .t{font-family:var(--f-body);font-size:9.5px;font-weight:600;fill:var(--faint)}
+.diagram .m{fill:var(--faint);font-weight:500}
+.diagram .e{fill:var(--hit-2);font-weight:700}
+.diagram .face{fill:rgba(255,255,255,.035);stroke:var(--faint);stroke-width:1}
+.diagram .band{fill:var(--hit);filter:drop-shadow(0 0 4px rgba(255,106,31,.55))}
+.diagram .noband{fill:none;stroke:var(--faint);stroke-width:1;stroke-dasharray:2 2}
+.legend{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.legend i{width:16px;height:6px;border-radius:1px;background:var(--hit);box-shadow:0 0 6px rgba(255,106,31,.7)}
+.legend u{width:16px;height:6px;border:1px dashed var(--faint);text-decoration:none;margin-left:6px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;margin:0;font-size:14px;min-width:0}
+.kv dt{color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;padding-top:2px}
+.kv dd{margin:0;font-family:var(--f-mono);font-size:12.5px;overflow-wrap:anywhere}
+.empty-msg{color:var(--muted);font-size:14px}
+.empty-msg b{font-family:var(--f-mono);font-weight:600;color:var(--accent);font-size:12.5px}
+
+.listhead{display:flex;align-items:baseline;gap:10px}
+.listhead h2{font-family:var(--f-display);font-weight:700;font-stretch:112%;font-size:16px;letter-spacing:.01em;margin:0;margin-right:auto}
+.progress{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:4px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--hit),var(--hit-2));width:0;transition:width .35s;border-radius:4px;box-shadow:0 0 10px rgba(255,106,31,.6)}
+.search{width:100%;border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:10px 14px}
+.search::placeholder{color:var(--faint)}
+.group{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;background:none;border:0;text-align:left;cursor:pointer;
+  font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);padding:16px 8px 6px 4px}
+.group:hover{color:var(--ink)}
+.group span{letter-spacing:.04em;text-transform:none;font-weight:500;color:var(--hit-2);opacity:0;transition:opacity .15s}
+.group:hover span,.group:focus-visible span{opacity:1}
+@media (pointer:coarse){.group span{opacity:1}}
+.reader{display:flex;align-items:center;gap:10px;border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:10px 14px;font-size:13px;color:var(--muted)}
+.reader b{color:var(--ink);font-weight:600}
+.reader .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 22%,transparent);flex:none}
+.reader.flash{border-color:var(--hit);color:var(--ink)}
+.reader.flash .dot{background:var(--hit);box-shadow:0 0 0 4px rgba(255,106,31,.25)}
+
+.row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:3px 12px;align-items:center;width:100%;text-align:left;background:none;border:0;
+  border-radius:12px;padding:10px 8px;cursor:pointer;font-size:14px;transition:background .12s}
+.row:hover{background:var(--surface-2)}
+.row.sel{background:var(--hit-soft);box-shadow:inset 0 0 0 1px rgba(255,106,31,.3)}
+.row .chk{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;grid-row:span 2}
+.row .chk.on{background:var(--hit);border-color:var(--hit);color:#fff;box-shadow:0 0 8px rgba(255,106,31,.5)}
+.row .chk svg{width:12px;height:12px}
+.row .n{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .c{font-family:var(--f-mono);font-size:11px;color:var(--faint);grid-column:2}
+.row .d{font-family:var(--f-mono);font-weight:500;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap;grid-row:span 2;grid-column:3}
+
+.sheet{position:fixed;inset:0;background:rgba(5,6,8,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet-in{background:var(--solid);border:1px solid var(--hair);width:100%;max-width:560px;max-height:90%;overflow:auto;border-radius:26px 26px 0 0;box-shadow:var(--shadow);
+  padding-block:22px calc(22px + env(safe-area-inset-bottom,0px));padding-left:max(22px,env(safe-area-inset-left,0px));padding-right:max(22px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:14px}
+@media (min-width:600px){.sheet{align-items:center}.sheet-in{border-radius:26px}}
+.sheet h3{font-family:var(--f-display);font-weight:700;font-stretch:115%;font-size:22px;margin:0;line-height:1.1}
+.sheet p{margin:0;color:var(--muted);font-size:14px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select{font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink);font-size:14px;border:1px solid var(--hair);background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.field select option{background:var(--solid)}
+.sheet-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(72px + env(safe-area-inset-top,0px));background:var(--solid);color:var(--ink);border:1px solid rgba(255,106,31,.4);
+  padding:10px 18px;border-radius:99px;font-weight:600;font-size:14px;z-index:30;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
+.check{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--hit)}
+.alt{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.linkbtn{background:none;border:0;padding:6px 0;color:var(--accent);font-size:14px;cursor:pointer}
+.linkbtn:hover{text-decoration:underline}
+.stack{display:flex;flex-direction:column;gap:10px}
+.or{text-align:center;color:var(--faint);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.wsinfo{border:1px solid var(--hair);background:var(--surface-2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
+.wsinfo b{color:var(--ink)}
+.wsinfo .codebig{font-family:var(--f-mono);font-size:20px;font-weight:600;color:var(--accent);letter-spacing:.12em}
+.twinbar{border-top:1px solid var(--hair);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.tb-t{font-size:13px;color:var(--muted)} .tb-t b{color:var(--ink)}
+.tb-b{display:flex;flex-wrap:wrap;gap:6px}
+.tb-b .btn{min-width:44px;padding:8px 12px;font-size:13px}
+.tb-b .btn.on{background:var(--hit);color:#fff;border-color:var(--hit)}
+.iconbtn.on{background:var(--hit);border-color:var(--hit);color:#fff}
+.elcard .pname{font-size:24px}
+.runners{display:flex;flex-direction:column;gap:6px}
+.runners h4,.elsec h4{margin:0 0 2px;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.rn{display:grid;grid-template-columns:minmax(76px,auto) auto 1fr;gap:12px;align-items:baseline;padding:9px 12px;border:1px solid var(--hair);border-radius:12px;background:rgba(255,255,255,.025)}
+.rn .pos{font-size:13px;color:var(--muted);font-weight:600}
+.rn b{font-family:var(--f-mono);font-size:16px;color:var(--accent);font-weight:600;white-space:nowrap}
+.rn span{font-size:12.5px;color:var(--muted);min-width:0}
+.hwlist summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:600;padding:4px 0}
+.hwlist ul{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--muted)}
+.hwlist li b{font-family:var(--f-mono);color:var(--ink);margin-right:6px}
+.elline{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:1px solid var(--hair);background:rgba(255,255,255,.025);border-radius:12px;padding:10px 12px;cursor:pointer;font-size:13px;color:var(--muted)}
+.elline:hover{border-color:var(--muted)}
+.elline b{color:var(--ink);font-weight:600}
+.elline em{font-style:normal;font-family:var(--f-mono);color:var(--accent);white-space:nowrap}
+.choices{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.choice{text-align:left;display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:9px 12px}
+.choice span{font-family:var(--f-mono);color:var(--muted)}
+.prow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:14px 0;border-bottom:1px solid var(--hair)}
+.prow b{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.prow small{grid-column:1;color:var(--muted);font-size:12px}
+.prow .acts{grid-row:1 / span 2;grid-column:2;display:flex;gap:6px}
+.prow .acts .btn{padding:7px 12px;font-size:13px}
+.btn.danger{color:var(--warn)}
+.btn.danger.armed{background:var(--warn);color:#1a0d08;border-color:var(--warn)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.panel,.iconbtn,.pill-select select{background:var(--solid)}}
+@media (prefers-reduced-motion:reduce){.bar i,.scanbtn,.row,.btn,.iconbtn{transition:none}}
+html{padding-top:env(safe-area-inset-top,0px)}
+.scanbtn{border:0;width:100%;color:#fff}
+.cam{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column}
+.cam video{flex:1;min-height:0;width:100%;object-fit:cover}
+.cam .aim{position:absolute;left:10%;right:10%;top:22%;bottom:34%;border:2px solid rgba(255,255,255,.85);border-radius:18px;box-shadow:0 0 0 100vmax rgba(0,0,0,.35);pointer-events:none}
+.cam .aim::after{content:"";position:absolute;left:8%;right:8%;top:50%;height:2px;background:var(--hit);box-shadow:0 0 12px var(--hit);animation:sweep 1.6s ease-in-out infinite alternate}
+@keyframes sweep{from{transform:translateY(-60px)}to{transform:translateY(60px)}}
+@media (prefers-reduced-motion:reduce){.cam .aim::after{animation:none}}
+.cam-bar{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:12px;align-items:center;
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:linear-gradient(to top,rgba(0,0,0,.8),transparent);color:#fff;text-align:center}
+.cam-bar .row2{display:flex;gap:10px}
+.cam-bar .btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <header>
+      <div class="mark" aria-hidden="true">K</div>
+      <div class="brand">Kosmo<small>Mizarstvo Stajl</small></div>
+      <div class="pill-select"><select id="project" aria-label="Projekt"></select></div>
+      <button class="iconbtn" id="openProjects" type="button" aria-label="Projekti" title="Projekti">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      </button>
+    </header>
+    <div class="stage-tools">
+      <button class="iconbtn" id="showAll" type="button" aria-label="Pokaži vse" title="Pokaži vse">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+      <button class="iconbtn" id="viewMode" type="button" aria-label="Prosojen pogled" title="Prosojen / poln pogled" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9" stroke-dasharray="2.5 2.5"/></svg>
+      </button>
+      <button class="iconbtn" id="resetView" type="button" aria-label="Približaj izbrani kos" title="Približaj izbrani kos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+      </button>
+    </div>
+    <div class="stage-hint" id="hint">Vrti s prstom · tapni omarico</div>
+  </div>
+
+  <aside class="panel">
+    <div class="grab" aria-hidden="true"></div>
+    <div class="scanrow">
+      <button class="scanbtn" id="scanBtn" type="button">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3"/><path d="M7 8v8M10.5 8v8M14 8v8M17 8v8"/></svg></span>
+        Skeniraj etiketo
+      </button>
+      <input id="photo" type="file" accept="image/*" capture="environment" hidden>
+      <form class="manual" id="manual">
+        <input id="codeIn" placeholder="ali vpiši kodo, npr. 09-62" autocomplete="off" aria-label="Koda kosa">
+        <button class="btn primary" type="submit">Najdi</button>
+      </form>
+      <div class="reader" id="reader"><span class="dot"></span><span><b>Čitalnik kod je pripravljen.</b> USB ali Bluetooth čitalnik: samo skeniraj, brez kamere in klikanja.</span></div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="card" id="card"></div>
+
+    <div>
+      <div class="listhead">
+        <h2>Kosi v projektu</h2>
+        <span class="progress" id="progress"></span>
+        <button class="btn ghost" type="button" id="listhead-clear" style="padding:4px 8px;font-size:12px">Počisti</button>
+      </div>
+      <div class="bar" style="margin:10px 0 12px"><i id="barfill"></i></div>
+      <input id="filter" class="search" placeholder="Išči po kodi, imenu ali elementu" aria-label="Išči kose">
+      <div id="list"></div>
+    </div>
+  </aside>
+</div>
+
+<div class="sheet" id="projSheet" hidden>
+  <div class="sheet-in">
+    <h3>Projekti</h3>
+    <p id="projNote">Uvoženi projekti se shranijo in so vidni na vseh telefonih, ki odprejo to aplikacijo.</p>
+    <div class="wsinfo" id="wsInfo" hidden></div>
+    <div id="projList"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" type="button" id="logout" hidden>Odjava</button>
+      <button class="btn ghost" type="button" id="projClose">Zapri</button>
+      <button class="btn primary" type="button" id="openImport">Uvozi nov projekt</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="importSheet" hidden>
+  <form class="sheet-in" id="importForm">
+    <h3>Uvozi projekt</h3>
+    <p>Iz Mega Tischlerja izberi <b>zip z dokumentacijo projekta</b> (etikete in DXF). Aplikacija sama poveže etikete s kosi v 3D modelu. Iz 3D Corpusa izberi datoteko projekta <b>.S3D</b>. Podprti so tudi .SAT, .CSV in projekt, izvožen iz te aplikacije (.json).</p>
+    <label class="field">Datoteke<input id="impFiles" type="file" multiple accept=".sat,.SAT,.dxf,.DXF,.s3d,.S3D,.pdf,.zip,.csv,.txt,.obj,.json,application/pdf,application/zip,application/json,text/csv,text/plain"></label>
+    <label class="field">Ime projekta<input id="impName" placeholder="npr. Stanovanje mama (sicer ime datoteke)"></label>
+    <label class="field">Program<select id="impProg"><option>Mega Tischler</option><option>3D Corpus</option></select></label>
+    <div class="status" id="impStatus"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" type="button" id="impCancel">Prekliči</button>
+      <button class="btn primary" type="submit">Uvozi</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet" id="loginSheet" hidden>
+  <form class="sheet-in" id="loginForm">
+    <h3 id="loginTitle">Prijava</h3>
+    <p id="loginLead">Prijavi se z računom svoje delavnice.</p>
+    <label class="field">E-naslov<input id="loginEmail" type="email" autocomplete="username" required></label>
+    <label class="field" id="passField">Geslo<input id="loginPass" type="password" autocomplete="current-password" minlength="8" required></label>
+    <label class="check" id="rememberRow"><input id="remember" type="checkbox" checked> Ostani prijavljen na tej napravi</label>
+    <div class="status" id="loginMsg"></div>
+    <div class="sheet-actions"><button class="btn primary" type="submit" id="loginBtn">Prijava</button></div>
+    <div class="alt">
+      <button class="linkbtn" type="button" id="toSignup">Nimaš računa? Ustvari ga</button>
+      <button class="linkbtn" type="button" id="toForgot">Pozabljeno geslo</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet" id="setupSheet" hidden>
+  <div class="sheet-in">
+    <h3>Tvoja delavnica</h3>
+    <p>Račun še ni povezan z delavnico. Ustvari novo (30 dni brezplačnega preizkusa) ali se pridruži obstoječi s kodo, ki ti jo da vodja.</p>
+    <form id="createWs" class="stack">
+      <label class="field">Ime delavnice<input id="wsName" placeholder="npr. Mizarstvo Novak" required maxlength="80"></label>
+      <button class="btn primary" type="submit">Ustvari delavnico</button>
+    </form>
+    <div class="or">ali</div>
+    <form id="joinWs" class="stack">
+      <label class="field">Koda delavnice<input id="wsCode" placeholder="npr. 7F3A9C" required maxlength="12" autocapitalize="characters"></label>
+      <button class="btn" type="submit">Pridruži se</button>
+    </form>
+    <div class="status" id="setupMsg"></div>
+  </div>
+</div>
+
+<div class="sheet" id="pwSheet" hidden>
+  <form class="sheet-in" id="pwForm">
+    <h3>Novo geslo</h3>
+    <label class="field">Novo geslo<input id="newPass" type="password" autocomplete="new-password" minlength="8" required></label>
+    <div class="status" id="pwMsg"></div>
+    <div class="sheet-actions"><button class="btn primary" type="submit">Shrani geslo</button></div>
+  </form>
+</div>
+
+<div class="cam" id="cam" hidden>
+  <video id="camVideo" playsinline muted autoplay></video>
+  <div class="aim" aria-hidden="true"></div>
+  <div class="cam-bar">
+    <div id="camMsg">Usmeri kamero v kodo na etiketi</div>
+    <div class="row2"><button class="btn" type="button" id="camPhoto">Fotografiraj namesto tega</button><button class="btn primary" type="button" id="camClose">Zapri</button></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="sat.js"></script>
+<script src="megatischler.js"></script>
+<script src="corpus.js"></script>
+<script>
+(function(){
+"use strict";
+const $ = s => document.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- Materiali ---------- */
+const MATS = {
+  "27166MN_19":   {color:"#9C8F80", label:"27166MN_19"},
+  "H3152ST19_18": {color:"#B88A58", label:"H3152ST19_18"},
+  "U961_ST2_18":  {color:"#3B3E42", label:"U961_ST2_18"},
+  "BELA_18":      {color:"#E9E7E2", label:"Bela mat 18"},
+  "HDF_8":        {color:"#D8D2C4", label:"HDF 8"},
+  "DELOVNA_38":   {color:"#6C5038", label:"Delovni pult 38"},
+  "STEKLO_4":     {color:"#A9CADB", label:"Steklo 4", glass:true},
+  "_":            {color:"#B9BEC2", label:"—"}
+};
+
+
+const shortEdge = x => { x = String(x||"").trim(); if (/U961/i.test(x)) return "U961"; const a = x.match(/\bA\d+\b/); if (a) return a[0];
+  return x.replace(/\(2\)\s*IV/i,"").replace(/\s*mm\b/i,"").replace(/\s+/g," ").trim() || "rob"; };
+function esFrom(e){
+  e = String(e||"").trim(); if (!e || e==="—" || e==="-") return {};
+  let m;
+  if ((m = e.match(/^(.*?)\s+spredaj$/i))) return {L1:shortEdge(m[1])};
+  if ((m = e.match(/^(.*?)\s*\/.*dolga robova$/i))){ const k = shortEdge(m[1]); return {L1:k,L2:k}; }
+  if (/vsi robovi|\(2\)\s*IV/i.test(e)){ const k = shortEdge(e.replace(/vsi robovi/i,"")); return {L1:k,L2:k,W1:k,W2:k}; }
+  const ps = e.split("/").map(x=>x.trim()).filter(Boolean);
+  if (ps.length > 1){ const keys=["L1","L2","W1","W2"], o={}; ps.slice(0,4).forEach((x,i)=>{ if(!/^(-|—|0|ne|brez)$/i.test(x)) o[keys[i]] = shortEdge(x); }); return o; }
+  return {};
+}
+/* ---------- Primer projekta ---------- */
+function buildDemo(){
+  const parts = [];
+  let qr = 5, bc = 40;
+  const nextQR = () => "1200000000" + String(qr++).padStart(2,"0");
+  const nextBC = () => { if (bc === 62) bc++; return "09-" + String(bc++).padStart(2,"0"); };
+  function add(p){
+    const s = p.size.slice().sort((a,b)=>b-a);
+    p.L = p.L ?? s[0]; p.W = p.W ?? s[1]; p.T = p.T ?? s[2];
+    p.es = p.es || esFrom(p.edges);
+    parts.push(p);
+  }
+  function cab(o){
+    const {el,x,y,w,h,d,mat,codeFn} = o, t = 18, edge = o.edge || "A8";
+    const c = () => o.codes && o.codes.length ? o.codes.shift() : codeFn();
+    add({code:c(),name:"STRANICA L",element:el,size:[t,h,d],pos:[x+t/2,y+h/2,d/2],mat,edges:`${edge} spredaj`});
+    add({code:c(),name:"STRANICA D",element:el,size:[t,h,d],pos:[x+w-t/2,y+h/2,d/2],mat,edges:`${edge} spredaj`});
+    add({code:c(),name:"DNO",element:el,size:[w-2*t,t,d],pos:[x+w/2,y+t/2,d/2],mat,edges:`${edge} spredaj`});
+    if (o.top === "letve"){
+      add({code:c(),name:"VEZNA LETEV SPREDAJ",element:el,size:[w-2*t,t,100],pos:[x+w/2,y+h-t/2,d-50],mat,edges:"—"});
+      add({code:c(),name:"VEZNA LETEV ZADAJ",element:el,size:[w-2*t,t,100],pos:[x+w/2,y+h-t/2,50],mat,edges:"—"});
+    } else {
+      add({code:o.topCode || c(),name:"STROP",element:el,size:[w-2*t,t,d],pos:[x+w/2,y+h-t/2,d/2],mat,edges:`${edge} / ${edge} dolga robova`});
+    }
+    add({code:c(),name:"HRBET",element:el,size:[w,h,8],pos:[x+w/2,y+h/2,-4],mat:"HDF_8",edges:"—",T:8});
+    if (o.shelf) add({code:c(),name:"POLICA",element:el,size:[w-2*t-2,t,d-30],pos:[x+w/2,y+h/2,(d-30)/2],mat,edges:`${edge} spredaj`});
+    const n = o.doors || 0;
+    for (let i=0;i<n;i++){
+      const dw = (w-4)/n - 2, cx = x + 2 + (i+0.5)*((w-4)/n);
+      const glass = o.door === "steklo";
+      add({code:c(),name:(glass?"VRATA STEKLO":"VRATA")+(n>1?(i?" D":" L"):""),element:el,size:[dw,h-4,glass?4:18],pos:[cx,y+h/2,d+11],
+        mat:glass?"STEKLO_4":(o.doorMat||"BELA_18"),edges:glass?"—":"ABS 1 mm vsi robovi",T:glass?4:18});
+    }
+  }
+  // Spodnji elementi
+  cab({el:"SPODNJA 1",x:0,y:100,w:600,h:720,d:560,mat:"BELA_18",top:"letve",shelf:true,doors:1,codeFn:nextBC});
+  cab({el:"SPODNJA 2",x:600,y:100,w:800,h:720,d:560,mat:"BELA_18",top:"letve",shelf:true,doors:2,codeFn:nextBC});
+  cab({el:"SPODNJA 3",x:1400,y:100,w:600,h:720,d:560,mat:"BELA_18",top:"letve",shelf:true,doors:1,codeFn:nextBC});
+  add({code:nextBC(),name:"DELOVNA PLOŠČA",element:"PULT",size:[2000,38,600],pos:[1000,839,300],mat:"DELOVNA_38",edges:"ABS 2 mm spredaj",T:38});
+  // Viseči elementi
+  cab({el:"VISEČA OMARA",x:0,y:1450,w:777,h:720,d:330,mat:"H3152ST19_18",edge:"A8",shelf:true,doors:2,doorMat:"H3152ST19_18",codeFn:nextBC});
+  add({code:nextBC(),name:"LETEV ZA LUČ",element:"VISEČA OMARA",size:[741,60,18],pos:[388.5,1420,311],mat:"H3152ST19_18",edges:"A8 / A8 / A8",L:741,W:60,T:18});
+  cab({el:"VISEČA 2",x:777,y:1450,w:765,h:720,d:309.7,mat:"27166MN_19",edge:"A8",shelf:true,doors:1,doorMat:"27166MN_19",topCode:"09-62",codeFn:nextBC});
+  cab({el:"VISEČA 3",x:1542,y:1450,w:458,h:720,d:309.7,mat:"27166MN_19",edge:"A8",shelf:true,doors:1,doorMat:"27166MN_19",codeFn:nextBC});
+  // Visoka omara z zgornjo vitrino
+  cab({el:"OM.SPODNJI DEL",x:2000,y:100,w:600,h:1200,d:560,mat:"U961_ST2_18",edge:"ABS 2mm U961",shelf:true,doors:1,doorMat:"U961_ST2_18",codeFn:nextQR});
+  cab({el:"OM.ZGORNJA.VITRINA",x:2000,y:1300,w:600,h:900,d:560,mat:"U961_ST2_18",edge:"ABS 2mm U961",shelf:true,doors:1,door:"steklo",codeFn:nextQR});
+  const vod = [["E1",2000+18+8,1300+240],["E2",2000+18+8,1300+600],["E3",2600-18-8,1300+240],["E4",2600-18-8,1300+600]];
+  vod.forEach(([e,x,y],i)=>add({code:"1200000000"+String(i+1).padStart(2,"0"),name:"STRANICA VODILA D1",element:"OM.ZGORNJA.VITRINA",
+    note:e+" / A1",size:[16,106,518],pos:[x,y,20+259],mat:"U961_ST2_18",edges:"ABS 2mm(2) IV U961_ST2",L:518,W:106,T:16}));
+  return {id:"demo",name:"Testna kuhinja",program:"Primer",parts,hasGeometry:true,wall:true};
+}
+
+/* ---------- Stanje ---------- */
+const projects = [buildDemo()];
+let current = projects[0];
+let selected = null;
+let selEl = null;   // izbrana omarica (element); ob izbranem kosu je to njegova omarica
+let viewMode = (()=>{ try{ return localStorage.getItem("kosmo.view") || "xray"; }catch(e){ return "xray"; } })();
+const elKey = p => p ? String(p.el ?? p.element ?? "") : "";
+const elParts = k => current.parts.filter(q=>elKey(q)===k);
+const scanned = new Map(); // projectId -> Set
+
+/* ---------- 3D ---------- */
+const stage = $("#stage");
+let renderer, scene, camera, controls, root, need = true, tween = null, sun, env, ground, wall, grid;
+const meshOf = new Map();   // kos -> 3D telo (kode niso vedno edinstvene)
+const has3D = typeof THREE !== "undefined";
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function init3D(){
+  if (!has3D){ stage.insertAdjacentHTML("beforeend",'<div class="no3d">3D prikaz se ni naložil. Poskusi osvežiti stran.</div>'); return; }
+  renderer = new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setClearColor(0x000000,0);
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  stage.prepend(renderer.domElement);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(40,1,0.01,100);
+  controls = new THREE.OrbitControls(camera,renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = .12;
+  controls.addEventListener("change",()=>need=true);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x3a3f45,0.75));
+  sun = new THREE.DirectionalLight(0xffffff,0.85); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048,2048); sun.shadow.bias = -0.0004; sun.shadow.radius = 4;
+  scene.add(sun, sun.target);
+  const fill = new THREE.DirectionalLight(0xffffff,0.28); fill.position.set(-3,2,4); scene.add(fill);
+  env = new THREE.Group(); scene.add(env);
+  ground = new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.ShadowMaterial({opacity:.18}));
+  ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; env.add(ground);
+  wall = new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshStandardMaterial({color:0xe6e9eb,roughness:1}));
+  wall.receiveShadow = true; env.add(wall);
+  grid = new THREE.GridHelper(1,48,0xffffff,0xffffff); grid.material.transparent = true; grid.material.opacity = .045; grid.material.depthWrite = false; env.add(grid);
+  applyTheme();
+  new ResizeObserver(resize).observe(stage); resize();
+  // tap to select
+  let down=null;
+  renderer.domElement.addEventListener("pointerdown",e=>{down=[e.clientX,e.clientY]});
+  renderer.domElement.addEventListener("pointerup",e=>{
+    if(!down) return; const dx=e.clientX-down[0], dy=e.clientY-down[1]; down=null;
+    if (dx*dx+dy*dy>36) return;
+    const r = renderer.domElement.getBoundingClientRect();
+    const v = new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+    const rc = new THREE.Raycaster(); rc.setFromCamera(v,camera);
+    const hits = rc.intersectObjects(root?root.children:[],true).filter(h=>h.object.isMesh && h.object.userData.part);
+    const hit = hits.find(h=>h.object.material.opacity>0.12 || h.object.userData.part===selected) || hits[0];
+    if (!hit) return;
+    const p = hit.object.userData.part;
+    // prvi dotik izbere omarico, naslednji dotik v isti omarici izbere kos
+    if (selEl!=null && elKey(p)===selEl) select(p,{fly:false}); else selectEl(elKey(p));
+  });
+  (function loop(){ requestAnimationFrame(loop);
+    if (tween){ const k=Math.min(1,(performance.now()-tween.t0)/tween.dur), e=1-Math.pow(1-k,3);
+      camera.position.lerpVectors(tween.p0,tween.p1,e); controls.target.lerpVectors(tween.c0,tween.c1,e); need=true; if(k>=1) tween=null; }
+    if (selected && meshOf.has(selected) && !reduceMotion){ if (bandMat){ const k = 0.5+0.5*Math.sin(performance.now()/300); bandMat.color.set(css("--hit")||"#FF6A1F").lerp(new THREE.Color("#FFB37A"), k*.55); need=true; } }
+    if (controls.update()) need=true;
+    if (need){ renderer.render(scene,camera); need=false; }
+  })();
+}
+function resize(){ if(!renderer) return; const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/Math.max(h,1); camera.updateProjectionMatrix(); need=true; }
+function applyTheme(){ if(!scene) return; wall && wall.material.color.set(css("--wall")||"#1B1F23"); ground && (ground.material.opacity=.5); restyle(); }
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme);}catch(e){}
+
+function makeMat(matKey,color){
+  const m = MATS[matKey] || MATS._;
+  return new THREE.MeshStandardMaterial({color:color||m.color,roughness:.82,metalness:0,transparent:true,opacity:m.glass?.35:1,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});
+}
+function loadProject3D(p){
+  if (!has3D) return;
+  if (root){ scene.remove(root); root.traverse(o=>{o.geometry&&o.geometry.dispose(); o.material&&o.material.dispose&&o.material.dispose();}); }
+  meshOf.clear(); root = new THREE.Group(); scene.add(root);
+  $("#hint").hidden = !p.hasGeometry;
+  stage.querySelector(".no3d")?.remove();
+  if (!p.hasGeometry){ stage.insertAdjacentHTML("beforeend",'<div class="no3d">Ta projekt nima 3D modela.<br>Podatki o kosu se vseeno pokažejo spodaj.</div>'); need=true; return; }
+  if (p.objAssetId && p.objText == null){
+    stage.insertAdjacentHTML("beforeend",'<div class="no3d">Nalagam 3D model …</div>'); need=true;
+    fetch("/_blob/"+p.objAssetId).then(r=>{ if(!r.ok) throw 0; return r.text(); })
+      .then(t=>{ p.objText=t; if(current===p) loadProject3D(p); })
+      .catch(()=>{ if(current===p){ stage.querySelector(".no3d").textContent="3D modela ni bilo mogoče naložiti. Podatki o kosih so spodaj."; } });
+    return;
+  }
+  if (p.objText != null){ // uvožen OBJ
+    const obj = buildObj(p.objText, p.parts);
+    root.add(obj);
+    obj.traverse(o=>{ if(o.isMesh){ o.material = makeMat(o.userData.mat||"_"); o.castShadow = o.receiveShadow = true; addEdges(o); const part = o.userData.code && p.parts.find(q=>q.code===o.userData.code); if(part){ o.userData.part = part; meshOf.set(part,o); } } });
+  } else {
+    for (const part of p.parts){
+      const g = new THREE.BoxGeometry(part.size[0]/1000,part.size[1]/1000,part.size[2]/1000);
+      const m = new THREE.Mesh(g,makeMat(part.mat,part.color));
+      m.position.set(part.pos[0]/1000,part.pos[1]/1000,part.pos[2]/1000);
+      m.userData = {code:part.code,mat:part.mat,color:part.color,part};
+      m.castShadow = m.receiveShadow = true; addEdges(m); root.add(m); meshOf.set(part,m);
+    }
+    for (const x of (p.extras||[])){ // okovje in stene iz modela: samo za orientacijo, ni jih mogoče izbrati
+      const m = new THREE.Mesh(new THREE.BoxGeometry(x.size[0]/1000,x.size[1]/1000,x.size[2]/1000),
+        new THREE.MeshStandardMaterial({color:x.color,roughness:x.k==="hw"?.35:1,metalness:x.k==="hw"?.4:0,transparent:true}));
+      m.position.set(x.pos[0]/1000,x.pos[1]/1000,x.pos[2]/1000);
+      m.userData = {extra:x.k}; m.castShadow = x.k==="hw"; m.receiveShadow = true; root.add(m);
+    }
+  }
+  restyle(); placeEnv(); fitAll(false);
+}
+function placeEnv(){
+  if (!root || !env) return;
+  const box = new THREE.Box3().setFromObject(root); if (box.isEmpty()){ env.visible=false; return; }
+  env.visible = true;
+  const c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3()), r = Math.max(s.x,s.y,s.z);
+  ground.scale.set(r*4,r*4,1); ground.position.set(c.x,box.min.y-0.001,c.z+r*0.6);
+  grid.scale.setScalar(r*4); grid.position.set(c.x,box.min.y,c.z+r*0.6);
+  wall.scale.set(s.x+r*1.2, s.y+r*0.8, 1); wall.position.set(c.x, box.min.y+(s.y+r*0.8)/2, box.min.z-0.012);
+  wall.visible = !!current.wall;
+  sun.position.set(c.x+r*0.7, box.max.y+r*1.4, c.z+r*1.6); sun.target.position.copy(c);
+  const sc = sun.shadow.camera; sc.left=-r; sc.right=r; sc.top=r; sc.bottom=-r; sc.near=0.01; sc.far=r*6; sc.updateProjectionMatrix();
+  need = true;
+}
+
+function addEdges(m){
+  const l = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry,25),new THREE.LineBasicMaterial({color:css("--edge")||"#1D2226",transparent:true,opacity:.18}));
+  l.userData.isEdge = true; m.add(l);
+}
+let bandGroup = null, bandMat = null;
+function clearBands(){
+  if (!bandGroup) return;
+  bandGroup.parent && bandGroup.parent.remove(bandGroup);
+  bandGroup.traverse(o=>o.geometry&&o.geometry.dispose()); bandGroup = null;
+}
+// Oranžni trakovi na zarobljenih robovih izbranega kosa (L1/L2 = dolga robova, W1/W2 = kratka)
+function addBands(mesh, es){
+  if (!es || !Object.keys(es).length) return;
+  const g = mesh.geometry; g.computeBoundingBox();
+  const size = g.boundingBox.getSize(new THREE.Vector3()), c = g.boundingBox.getCenter(new THREE.Vector3());
+  const dims = [size.x,size.y,size.z], ord = [0,1,2].sort((a,b)=>dims[b]-dims[a]);
+  const La = ord[0], Wa = ord[1], Ta = ord[2], T = dims[Ta], eps = Math.max(T*0.6, dims[La]*0.008, 1e-5);
+  if (!bandMat) bandMat = new THREE.MeshBasicMaterial({color:0xff6a1f});
+  bandMat.color.set(css("--hit")||"#FF6A1F");
+  bandGroup = new THREE.Group();
+  const strip = (along, off, sign) => {
+    const s = [0,0,0]; s[along] = dims[along]*1.002; s[Ta] = T*1.04; s[off] = eps;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(s[0],s[1],s[2]), bandMat);
+    const p = [c.x,c.y,c.z]; p[off] += sign*(dims[off]/2 + eps/2);
+    m.position.set(p[0],p[1],p[2]); m.userData.isBand = true; m.renderOrder = 3; bandGroup.add(m);
+  };
+  if (es.L1) strip(La,Wa,+1); if (es.L2) strip(La,Wa,-1);
+  if (es.W1) strip(Wa,La,+1); if (es.W2) strip(Wa,La,-1);
+  mesh.add(bandGroup);
+}
+function restyle(){
+  if (!root) return;
+  clearBands();
+  const hit = new THREE.Color(css("--hit")||"#FF6A1F"), ok = new THREE.Color(css("--ok")||"#2E8A57"), ghost = new THREE.Color(css("--ghost")||"#C7CDD2");
+  const edgeCol = new THREE.Color(css("--edge")||"#1D2226");
+  const set = scanned.get(current.id) || new Set();
+  root.traverse(o=>{
+    if (!o.isMesh || !o.userData || o.userData.isBand) return;
+    const focus = selEl!=null, xray = viewMode==="xray";
+    if (o.userData.extra){ const wallX = o.userData.extra==="wall"; o.material.opacity = focus ? (xray?(wallX?.06:.05):(wallX?.2:.3)) : (wallX?.5:1); o.material.depthWrite = !focus && !wallX; return; }
+    const base = new THREE.Color(o.userData.color || (MATS[o.userData.mat]||MATS._).color), glass = (MATS[o.userData.mat]||{}).glass;
+    const part = o.userData.part, code = o.userData.code, isSel = !!selected && part===selected;
+    const inEl = focus && part && elKey(part)===selEl;
+    const mat = o.material, edge = o.children.find(c=>c.userData.isEdge);
+    const normal = () => set.has(code) ? base.clone().lerp(ok,.35) : base;
+    edge && edge.material.color.copy(edgeCol);
+    mat.emissive.setRGB(0,0,0); o.renderOrder = 0;
+    if (isSel){ mat.color.set("#C9CDD1").lerp(base,.15); if(!xray) mat.emissive.set(hit).multiplyScalar(.18); mat.opacity=1; mat.depthWrite=true; o.renderOrder=2; o.castShadow=true; edge&&(edge.material.color.setRGB(1,1,1), edge.material.opacity=.85); }
+    else if (!focus){ mat.color.copy(normal()); mat.opacity = glass?.35:1; mat.depthWrite=!glass; o.castShadow=!glass; edge&&(edge.material.opacity=.12); }
+    else if (xray){   // prosojno: omarica kot obris, ostalo skoraj nevidno
+      if (inEl){ mat.color.copy(base); mat.opacity = selected ? .13 : .42; mat.depthWrite=false; o.castShadow=false; o.renderOrder=1; edge&&(edge.material.opacity=selected?.5:.6); }
+      else { mat.color.copy(ghost); mat.opacity=.04; mat.depthWrite=false; o.castShadow=false; edge&&(edge.material.opacity=.1); }
+    } else {          // polno: prava omarica, ostale omarice zatemnjene
+      if (inEl){ mat.color.copy(normal()); mat.opacity = glass?.35:1; mat.depthWrite=!glass; o.castShadow=!glass; edge&&(edge.material.opacity=.22); }
+      else { mat.color.copy(base).lerp(ghost,.5); mat.opacity=.28; mat.depthWrite=false; o.castShadow=false; edge&&(edge.material.opacity=.08); }
+    }
+  });
+  if (selected && meshOf.has(selected)) addBands(meshOf.get(selected), selected.es || esFrom(selected.edges));
+  need = true;
+}
+
+function flyTo(box,dur=650,dirIn){
+  const c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3()).length();
+  const dist = Math.max(s*1.6, .9) / Math.tan(camera.fov*Math.PI/360) * .55;
+  const dir = (dirIn || new THREE.Vector3(.45,.35,1)).clone().normalize();
+  const p1 = c.clone().add(dir.multiplyScalar(dist));
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  tween = {t0:performance.now(),dur:reduce?1:dur,p0:camera.position.clone(),p1,c0:controls.target.clone(),c1:c};
+}
+// Pogled na celo omarico; ob izbranem kosu kamera gleda s strani, kjer je njegovo lice
+function elBox(k){ const b = new THREE.Box3(); elParts(k).forEach(q=>{ const m = meshOf.get(q); m && b.expandByObject(m); }); return b; }
+function flyToEl(k, part){
+  if (!has3D || !root) return;
+  const eb = elBox(k); if (eb.isEmpty()) return;
+  const c = eb.getCenter(new THREE.Vector3()), sz = eb.getSize(new THREE.Vector3());
+  let dir = new THREE.Vector3(.28,.3,1);
+  const mesh = part && meshOf.get(part);
+  if (mesh){
+    const pb = new THREE.Box3().setFromObject(mesh), pc = pb.getCenter(new THREE.Vector3()), ps = pb.getSize(new THREE.Vector3());
+    const d = [ps.x,ps.y,ps.z], Ta = [0,1,2].sort((a,b)=>d[a]-d[b])[0];
+    let sign = Math.sign([pc.x,pc.y,pc.z][Ta]-[c.x,c.y,c.z][Ta]) || 1;
+    if (Ta===0) dir.set(sign*.9,.32,.62);
+    else if (Ta===2){ if (viewMode==="xray" && sign<0) sign = 1; dir.set(.22,.28,sign); }
+    else dir.set(.18,.9,.62);
+  }
+  dir.normalize();
+  const vf = camera.fov*Math.PI/180, hf = 2*Math.atan(Math.tan(vf/2)*camera.aspect), f = Math.min(vf,hf);
+  const r = sz.length()/2, dist = Math.max(r/Math.sin(f/2)*1.02, .6);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  tween = {t0:performance.now(),dur:reduce?1:700,p0:camera.position.clone(),p1:c.clone().add(dir.multiplyScalar(dist)),c0:controls.target.clone(),c1:c};
+}
+function fitAll(anim=true){
+  if (!root) return; const box = new THREE.Box3().setFromObject(root); if (box.isEmpty()) return;
+  const c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3()).length();
+  const dist = s / Math.tan(camera.fov*Math.PI/360) * .62;
+  const p1 = c.clone().add(new THREE.Vector3(.35,.25,1).normalize().multiplyScalar(dist));
+  camera.near = s/500; camera.far = s*20; camera.updateProjectionMatrix();
+  if (!anim){ camera.position.copy(p1); controls.target.copy(c); need=true; return; }
+  tween = {t0:performance.now(),dur:600,p0:camera.position.clone(),p1,c0:controls.target.clone(),c1:c};
+}
+
+/* ---------- UI ---------- */
+const esc = s => String(s ?? "").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = n => n==null||n===""?"–":String(Math.round(Number(n)*10)/10).replace(".",",");
+function scannedSet(){ if(!scanned.has(current.id)) scanned.set(current.id,new Set()); return scanned.get(current.id); }
+
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function diagram(p){
+  const L = Number(p.L)||0, W = Number(p.W)||0;
+  if (!L || !W) return "";
+  const es = p.es || esFrom(p.edges), S = 7, G = 1.5;
+  const maxW = 92, maxH = 46, r = Math.min(maxW/L, maxH/W);
+  const w = Math.max(28, L*r), h = Math.max(14, W*r), x = 40 + (maxW-w)/2, y = 30 + (maxH-h)/2;
+  const cx = x+w/2, cy = y+h/2;
+  const strip = (k,rx,ry,rw,rh) => `<rect class="${es[k]?"band":"noband"}" x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="1"/>`;
+  const lab = (k,len) => `<tspan class="${es[k]?"e":"m"}">${fmt(len)}${es[k]?" "+esc(es[k]):""}</tspan>`;
+  const n = Object.keys(es).length;
+  return `<div><svg class="diagram" viewBox="0 0 172 108" role="img" aria-label="Kos ${fmt(L)} × ${fmt(W)} mm; ${n?"zarobljeni robovi so oranžni":"brez robnega traku"}">
+    <rect class="face" x="${x}" y="${y}" width="${w}" height="${h}" rx="1"/>
+    ${strip("L1",x,y-S-G,w,S)}${strip("L2",x,y+h+G,w,S)}${strip("W1",x-S-G,y,S,h)}${strip("W2",x+w+G,y,S,h)}
+    <text x="${cx}" y="${y-S-G-6}" text-anchor="middle">${lab("L1",L)}</text>
+    <text x="${cx}" y="${y+h+S+G+13}" text-anchor="middle">${lab("L2",L)}</text>
+    <text transform="translate(${x-S-G-7} ${cy}) rotate(-90)" text-anchor="middle">${lab("W1",W)}</text>
+    <text transform="translate(${x+w+S+G+7} ${cy}) rotate(90)" text-anchor="middle">${lab("W2",W)}</text>
+    ${h>=16?`<text class="t" x="${cx}" y="${cy+3.5}" text-anchor="middle">ploskev${p.T?" "+fmt(p.T):""}</text>`:""}
+  </svg><div class="legend">${p.esUnknown?"<u style=\"margin:0\"></u>robovi še niso znani (manjka kosovnica)":"<i></i>rob z ABS trakom<u></u>brez traku"}</div></div>`;
+}
+
+function elInfo(k){
+  const ps = elParts(k), name = ps[0] ? (ps[0].element||"Brez elementa") : "";
+  const mn=[1e9,1e9,1e9], mx=[-1e9,-1e9,-1e9];
+  ps.forEach(q=>{ if(!q.size||!q.pos) return; for(let i=0;i<3;i++){ mn[i]=Math.min(mn[i],q.pos[i]-q.size[i]/2); mx[i]=Math.max(mx[i],q.pos[i]+q.size[i]/2); } });
+  const dims = mn[0]<1e9 ? mx.map((v,i)=>v-mn[i]) : null;
+  const h = current.hw && current.hw[k], N = current.hwN || [];
+  const runners = h ? h.r.map(([y,ni,sub])=>{ const n = N[ni]||""; const nl = (n.match(/NL\s*=\s*(\d+)/i)||[])[1];
+      const brand = (n.match(/LEGRABOX|TANDEMBOX|MOVENTO|TANDEM|QUADRO|ANTARO|MERIVOBOX/i)||[""])[0];
+      const kg = (n.match(/(\d+)\s*kg/i)||[])[1], box = (String(sub||"").match(/_([A-Z])_box/i)||[])[1];
+      const bits = [brand && brand[0]+brand.slice(1).toLowerCase(), box && "višina "+box.toUpperCase(), kg && kg+" kg", /blumotion/i.test(n) && "Blumotion"].filter(Boolean);
+      return {y, nl, info: bits.join(" · ") || n}; }) : [];
+  const items = h ? h.i.map(([ni,q])=>({n:N[ni]||"", q})) : [];
+  const same = current.parts.filter(q=>(q.element||"")===name), dup = new Set(same.map(elKey)).size > 1;
+  return {k, name, dup, ps, dims, runners, items, hasHw: !!current.hw};
+}
+const posName = (i,n) => n===1 ? "Predal" : i===0 ? "Spodaj" : i===n-1 ? "Zgoraj" : n===3 ? "Sredina" : `${i+1}. od spodaj`;
+function runnersHTML(e){
+  if (!e.runners.length) return `<div class="empty-msg">${e.hasHw ? "V tej omarici ni predalov z vodili." : "Ta projekt nima podatkov o okovju. Projekte iz 3D Corpusa znova uvozi, da se pokažejo vodila."}</div>`;
+  return `<div class="runners"><h4>Vodila predalov · od spodaj navzgor</h4>` + e.runners.map((r,i)=>
+    `<div class="rn"><span class="pos">${posName(i,e.runners.length)}</span><b>${r.nl?"NL "+r.nl:"–"}</b><span>${esc(r.info)}</span></div>`).join("") + `</div>`;
+}
+function renderElCard(card){
+  const e = elInfo(selEl), set = scannedSet();
+  const lab = e.ps.filter(q=>!q.noLabel).length, done = e.ps.filter(q=>set.has(q.code)).length;
+  card.className = "card found elcard";
+  card.innerHTML = `<div class="card-head"><span class="chip">Omarica</span><span class="tag${done&&done===e.ps.length?" ok":""}"><i></i>${done} / ${e.ps.length} skenirano</span></div>
+    <div><p class="pname">${esc(e.name)}</p><div class="pelem">${e.dims?`Š ${fmt(e.dims[0])} × V ${fmt(e.dims[1])} × G ${fmt(e.dims[2])} mm · `:""}${e.ps.length} kosov${lab!==e.ps.length?`, ${lab} z etiketo`:""}</div></div>
+    ${runnersHTML(e)}
+    ${e.items.length?`<details class="hwlist"><summary>Vse okovje (${e.items.length})</summary><ul>${e.items.map(it=>`<li><b>${it.q}×</b>${esc(it.n)}</li>`).join("")}</ul></details>`:""}
+    <div class="empty-msg">Tapni kos v omarici za mere in robove.</div>`;
+}
+function elLine(p){
+  const e = elInfo(elKey(p));
+  const nls = e.runners.map(r=>r.nl).filter(Boolean);
+  return `<button type="button" class="elline" id="toEl"><span>Omarica <b>${esc(e.name)}</b></span>${nls.length?`<em>vodila ${nls.join(" / ")}</em>`:`<em>podrobnosti ›</em>`}</button>`;
+}
+function renderCard(){
+  const card = $("#card");
+  if (!selected && selEl!=null){ renderElCard(card); return; }
+  if (!selected){
+    card.className = "card";
+    card.innerHTML = `<div><p class="pname">Skeniraj kos</p><div class="pelem">Pokaže se, kje v projektu stoji.</div></div>
+      ${current.id==="demo"?`<div class="empty-msg">V testni kuhinji sta tudi tvoji etiketi: <b>09-62</b> (strop, viseča 2) in <b>120000000002</b> (stranica vodila D1).</div>`:""}`;
+    return;
+  }
+  const p = selected, isScanned = scannedSet().has(p.code), m = MATS[p.mat];
+  card.className = "card found";
+  card.innerHTML = `<div class="card-head"><span class="chip">${esc(p.code)}</span>
+      ${isScanned?'<span class="tag ok"><i></i>Skenirano</span>':'<span class="tag"><i></i>Ni skenirano</span>'}</div>
+    <div><p class="pname">${esc(p.name)}</p><div class="pelem">${esc(p.element||"")}${p.note?" · "+esc(p.note):""}</div></div>
+    <div class="card-body">${diagram(p) || '<div class="empty-msg">Mere niso znane</div>'}
+      <dl class="kv">
+        <dt>Mere</dt><dd>${fmt(p.L)} × ${fmt(p.W)}${p.T?" × "+fmt(p.T):""} mm</dd>
+        <dt>Material</dt><dd>${esc(m&&p.mat!=="_"?m.label:(p.matText||"–"))}</dd>
+        <dt>Robovi</dt><dd>${esc(p.edges||"–")}</dd>
+      </dl></div>${twinBar(p)}${elLine(p)}`;
+  card.querySelector("#toEl").addEventListener("click",()=>selectEl(elKey(p)));
+  const tb = card.querySelector(".twinbar");
+  if (tb) tb.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{ const t = twinsOf(p)[+b.dataset.i]; if (t) select(t,{mark:false}); }));
+}
+// enaki kosi: isti element, iste mere in material — fizično zamenljivi, lahko gredo na katero koli od teh mest
+function twinsOf(p){
+  const same = (a,b)=>Math.abs((a||0)-(b||0))<0.6;
+  return current.parts.filter(q=>elKey(q)===elKey(p) && same(q.L,p.L) && same(q.W,p.W) && same(q.T,p.T) && (q.matText||"")===(p.matText||""));
+}
+function twinBar(p){
+  const tw = twinsOf(p); if (tw.length < 2) return "";
+  const idx = tw.indexOf(p);
+  return `<div class="twinbar"><div class="tb-t">Enak kos je v tem elementu na <b>${tw.length}</b> mestih. Izberi mesto:</div><div class="tb-b">` +
+    tw.map((q,i)=>`<button type="button" class="btn${i===idx?" on":""}" data-i="${i}" aria-pressed="${i===idx}">${i+1}${q.name!==p.name?" · "+esc(q.name):""}</button>`).join("") + `</div></div>`;
+}
+function renderList(){
+  const q = $("#filter").value.trim().toLowerCase(), set = scannedSet();
+  const groups = new Map();
+  for (const p of current.parts){
+    if (q && !(p.code+" "+p.name+" "+(p.element||"")).toLowerCase().includes(q)) continue;
+    const k = elKey(p);
+    if (!groups.has(k)) groups.set(k,[]);
+    groups.get(k).push(p);
+  }
+  const nameCount = {}; for (const k of groups.keys()){ const n = groups.get(k)[0].element||""; nameCount[n] = (nameCount[n]||0)+1; }
+  const seen = {};
+  let h = "";
+  for (const [k,arr] of groups){
+    const el = arr[0].element||""; seen[el] = (seen[el]||0)+1;
+    h += `<button type="button" class="group" data-el="${esc(k)}">${esc(el||"Brez elementa")}${nameCount[el]>1?" · "+seen[el]:""}<span>Pokaži v 3D</span></button>`;
+    for (const p of arr) h += `<button type="button" class="row${selected===p?" sel":""}" data-i="${current.parts.indexOf(p)}">
+      <span class="chk${set.has(p.code)?" on":""}">${set.has(p.code)?CHECK:""}</span><span class="n">${esc(p.name)}${p.note?" "+esc(p.note):""}</span>
+      <span class="d">${fmt(p.L)} × ${fmt(p.W)}</span><span class="c">${esc(p.code)}</span></button>`;
+  }
+  $("#list").innerHTML = h || `<div class="empty-msg" style="padding:12px 2px">Ni kosov, ki bi ustrezali iskanju.</div>`;
+  const n = current.parts.length, k = current.parts.filter(p=>set.has(p.code)).length;
+  $("#progress").textContent = `${k} / ${n} skenirano`;
+  $("#barfill").style.width = n?(k/n*100)+"%":"0";
+}
+
+function selectEl(k){
+  selected = null; selEl = k;
+  renderCard(); renderList(); restyle(); flyToEl(k);
+  const g = document.querySelector(`.group[data-el="${CSS.escape(k)}"]`); g && g.scrollIntoView({block:"nearest"});
+}
+function select(p,{fly=true,mark=false}={}){
+  selected = p; selEl = p ? elKey(p) : null;
+  if (mark && p && !scannedSet().has(p.code)){ scannedSet().add(p.code); saveScan(p.code); }
+  renderCard(); renderList(); restyle();
+  if (p && fly && has3D) flyToEl(elKey(p), p);
+  const row = p && document.querySelector(`.row[data-i="${current.parts.indexOf(p)}"]`);
+  row && row.scrollIntoView({block:"nearest"});
+}
+function setStatus(t,cls=""){ const s=$("#status"); s.textContent=t; s.className="status "+cls; }
+let toastT;
+function toast(t){ let el=$(".toast"); if(!el){el=document.createElement("div");el.className="toast";document.body.append(el);} el.textContent=t; el.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>el.hidden=true,2200); }
+
+/* ---------- Iskanje kode ---------- */
+const norm = s => String(s||"").trim().toUpperCase().replace(/\s+/g,"").replace(/^\*+|\*+$/g,"");
+function findPart(raw){
+  const s = norm(raw); if (!s) return null;
+  const cands = [s];
+  const lay = s.replace(/['/?_]/g,"-");
+  const yz = t => t.replace(/[YZ]/g,c=>c==="Y"?"Z":"Y");
+  cands.push(lay, yz(s), yz(lay));
+  if (/^\d+X\d+$/.test(s)) cands.push(s.replace("X","-"));   // Code 39: 09X62 -> 09-62
+  cands.push(s.replace(/X/g,"-"), s.replace(/-/g,""), s.replace(/^0+/,""));
+  const m = s.match(/(\d{1,3})\D{1,3}0*(\d{1,5})/);            // element + številka kosa v katerikoli obliki (09X062, 9-62 ...)
+  if (m) cands.push(m[1].padStart(2,"0")+"-"+m[2]);
+  for (const c of cands){ const ps = current.parts.filter(p=>norm(p.code)===c); if (ps.length) return ps.length>1 ? Object.assign(ps[0],{_all:ps}) && ps[0] : ps[0]; }
+  for (const c of cands){ if (c.length>=4){ const p = current.parts.find(p=>norm(p.code).replace(/-/g,"")===c.replace(/-/g,"")); if (p) return p; } }
+  return null;
+}
+function handleCode(raw,how){
+  const p = findPart(raw);
+  if (!p){ setStatus(`Koda ${norm(raw)} ni v projektu »${current.name}«. Preveri, ali je izbran pravi projekt.`,"err"); return; }
+  const all = p._all; delete p._all;
+  if (all && all.length > 1){   // ista koda na več kosih (npr. 3D Corpus): izberi pravega
+    const st = $("#status"); st.className = "status ok";
+    st.innerHTML = `${esc(how)}: koda ${esc(norm(raw))} je na ${all.length} kosih. Izberi pravega:<div class="choices">` +
+      all.map((q,i)=>`<button type="button" class="btn choice" data-i="${i}">${esc(q.element)} · ${esc(q.name)} <span>${fmt(q.L)}×${fmt(q.W)}</span></button>`).join("") + "</div>";
+    st.querySelectorAll(".choice").forEach(b=>b.addEventListener("click",()=>{ const q = all[+b.dataset.i]; setStatus(`${q.name}, ${q.element}`,"ok"); select(q,{mark:true}); }));
+    select(all[0],{mark:false}); return;
+  }
+  setStatus(`${how}: ${norm(raw)} → ${p.name}, ${p.element}`,"ok");
+  toast(`${p.name} · ${p.element}`);
+  select(p,{mark:true});
+}
+
+/* ---------- Branje kode s fotografije ---------- */
+const hasZX = typeof ZXing !== "undefined";
+function zxDecode(canvas){
+  const hints = new Map();
+  const F = ZXing.BarcodeFormat;
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[F.QR_CODE,F.CODE_39,F.CODE_128,F.DATA_MATRIX,F.EAN_13,F.ITF]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+  const reader = new ZXing.MultiFormatReader(); reader.setHints(hints);
+  let src;
+  if (ZXing.HTMLCanvasElementLuminanceSource) src = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+  else {
+    const d = canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height).data, g = new Uint8ClampedArray(canvas.width*canvas.height);
+    for (let i=0,j=0;i<d.length;i+=4,j++) g[j]=(d[i]*306+d[i+1]*601+d[i+2]*117)>>10;
+    src = new ZXing.RGBLuminanceSource(g,canvas.width,canvas.height);
+  }
+  return reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src))).getText();
+}
+function drawScaled(img,max,rot){
+  const sc = Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const w = Math.round(img.naturalWidth*sc), h = Math.round(img.naturalHeight*sc);
+  const c = document.createElement("canvas"); const ctx = c.getContext("2d",{willReadFrequently:true});
+  if (rot){ c.width=h; c.height=w; ctx.translate(h,0); ctx.rotate(Math.PI/2); } else { c.width=w; c.height=h; }
+  ctx.drawImage(img,0,0,w,h); return c;
+}
+$("#photo").addEventListener("change",async e=>{
+  const f = e.target.files && e.target.files[0]; e.target.value=""; if(!f) return;
+  if (!hasZX){ setStatus("Bralnik kod se ni naložil. Vpiši kodo ročno.","err"); return; }
+  setStatus("Berem kodo …");
+  const url = URL.createObjectURL(f), img = new Image();
+  img.onload = ()=>{
+    let text = null;
+    for (const [max,rot] of [[1600,false],[1100,false],[1600,true],[2400,false],[800,false]]){
+      try{ text = zxDecode(drawScaled(img,max,rot)); if (text) break; }catch(err){}
+    }
+    URL.revokeObjectURL(url);
+    if (text) handleCode(text,"Prebrano");
+    else setStatus("Kode na fotografiji ni bilo mogoče prebrati. Slikaj bližje, naravnost in ostro, ali vpiši kodo ročno.","err");
+  };
+  img.onerror = ()=>{ URL.revokeObjectURL(url); setStatus("Fotografije ni bilo mogoče odpreti.","err"); };
+  img.src = url;
+});
+$("#manual").addEventListener("submit",e=>{ e.preventDefault(); const v=$("#codeIn").value; if(v.trim()) handleCode(v,"Vpisano"); });
+$("#list").addEventListener("click",e=>{
+  const gh = e.target.closest(".group");
+  if (gh){ selectEl(gh.dataset.el); return; }
+  const b=e.target.closest(".row"); if(!b) return; const p=current.parts[+b.dataset.i]; p&&select(p); });
+$("#filter").addEventListener("input",renderList);
+$("#showAll").addEventListener("click",()=>{ select(null); fitAll(); setStatus(""); });
+$("#resetView").addEventListener("click",()=>{ if (selEl!=null) flyToEl(selEl, selected); else fitAll(); });
+function syncViewBtn(){ const b = $("#viewMode"), x = viewMode==="xray"; b.classList.toggle("on", x); b.setAttribute("aria-pressed", String(x)); b.setAttribute("aria-label", x?"Prosojen pogled (vklopljen)":"Prosojen pogled (izklopljen)"); }
+$("#viewMode").addEventListener("click",()=>{
+  viewMode = viewMode==="xray" ? "solid" : "xray";
+  try{ localStorage.setItem("kosmo.view", viewMode); }catch(e){}
+  syncViewBtn(); restyle(); toast(viewMode==="xray" ? "Prosojen pogled" : "Poln 3D pogled");
+});
+syncViewBtn();
+
+/* ---------- Shramba: Supabase (skupno za vse naprave) ali ta naprava (IndexedDB) ---------- */
+const CFG = window.KJEJEKOS_CONFIG || {};
+const cloud = !!(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase);
+let sb = null, unsubScans = null, WS = null;
+
+const idb = (()=>{ // majhna lokalna shramba za način brez oblaka
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res,rej)=>{ const r = indexedDB.open("kjejekos",1);
+    r.onupgradeneeded = () => { r.result.createObjectStore("projects"); r.result.createObjectStore("scans"); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
+  const tx = async (store,mode,fn) => { const db = await open(); return new Promise((res,rej)=>{ const t = db.transaction(store,mode); const st = t.objectStore(store); const out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); };
+  return {
+    all: store => tx(store,"readonly",st=>st.getAll()),
+    get: (store,k) => tx(store,"readonly",st=>st.get(k)),
+    put: (store,k,v) => tx(store,"readwrite",st=>st.put(v,k)),
+    del: (store,k) => tx(store,"readwrite",st=>st.delete(k))
+  };
+})();
+
+const store = {
+  async listProjects(){
+    if (cloud){
+      const {data,error} = await sb.from("projects").select("id,name,program,created_at,data").eq("workshop_id",WS).order("created_at",{ascending:false});
+      if (error) throw error;
+      return data.map(r=>({...(r.data||{}), id:r.id, name:r.name, program:r.program, createdAt:r.created_at}));
+    }
+    const all = await idb.all("projects"); return (all||[]).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  },
+  async saveProject(doc){
+    const id = doc.id || ("p" + Date.now().toString(36) + Math.random().toString(36).slice(2,6));
+    const {id:_, name, program, createdAt, ...rest} = doc;
+    if (cloud){
+      const {error} = await sb.from("projects").upsert({id, workshop_id:WS, name, program, created_at:createdAt||Date.now(), data:rest});
+      if (error) throw error;
+    } else await idb.put("projects", id, {...doc, id});
+    return id;
+  },
+  async deleteProject(id){
+    if (cloud){ const {error} = await sb.from("projects").delete().eq("id",id); if (error) throw error; await sb.from("scans").delete().eq("project_id",id); }
+    else { await idb.del("projects",id); await idb.del("scans",id); }
+  },
+  async getScans(pid){
+    if (cloud){ const {data,error} = await sb.from("scans").select("code").eq("project_id",pid); if (error) throw error; return new Set(data.map(r=>r.code)); }
+    return new Set((await idb.get("scans",pid)) || []);
+  },
+  async addScan(pid,code){
+    if (cloud){ const {error} = await sb.from("scans").upsert({workshop_id:WS, project_id:pid, code, at:Date.now()}); if (error) throw error; return; }
+    const s = new Set((await idb.get("scans",pid)) || []); s.add(code); await idb.put("scans",pid,[...s]);
+  },
+  async clearScans(pid){
+    if (cloud){ await sb.from("scans").delete().eq("project_id",pid); return; }
+    await idb.del("scans",pid);
+  },
+  subscribe(onProjects,onScans){ // spremembe z drugih naprav
+    if (!cloud) return;
+    sb.channel("kjejekos")
+      .on("postgres_changes",{event:"*",schema:"public",table:"projects",filter:"workshop_id=eq."+WS},()=>onProjects())
+      .on("postgres_changes",{event:"*",schema:"public",table:"scans",filter:"workshop_id=eq."+WS},p=>onScans((p.new&&p.new.project_id)||(p.old&&p.old.project_id)))
+      .subscribe();
+  }
+};
+
+function saveScan(code){ const pid = current.id; store.addScan(pid,code).catch(()=>toast("Skena ni bilo mogoče shraniti.")); }
+async function loadScans(p){
+  try{ const s = await store.getScans(p.id); scanned.set(p.id,s); if (p===current){ renderCard(); renderList(); restyle(); } }catch(e){}
+}
+function watchScans(){ loadScans(current); }
+async function clearScans(){ const p=current; scanned.set(p.id,new Set()); renderCard(); renderList(); restyle(); try{ await store.clearScans(p.id); }catch(e){} }
+
+/* ---------- Projekti ---------- */
+const demo = projects[0];
+function renderProjects(){
+  $("#project").innerHTML = projects.map(p=>`<option value="${esc(p.id)}"${p===current?" selected":""}>${esc(p.name)} · ${esc(p.program)}</option>`).join("");
+  const saved = projects.filter(p=>p.saved);
+  $("#projList").innerHTML = saved.length ? saved.map(p=>`<div class="prow"><b>${esc(p.name)}</b>
+      <small>${esc(p.program)} · ${p.parts.length} kosov · ${new Date(p.createdAt||0).toLocaleDateString("sl-SI")}</small>
+      <div class="acts"><button class="btn" type="button" data-open="${esc(p.id)}">Odpri</button>
+      <button class="btn" type="button" data-exp="${esc(p.id)}" title="Shrani kot datoteko">Izvozi</button>
+      <button class="btn danger" type="button" data-del="${esc(p.id)}">Izbriši</button></div></div>`).join("")
+    : `<div class="empty-msg" style="padding:10px 0">Ni še shranjenih projektov. Uvozi prvega: SAT ali ZIP iz Mega Tischlerja.</div>`;
+  $("#projNote").textContent = cloud ? "Projekti so shranjeni v skupni bazi in vidni na vseh napravah, prijavljenih v delavnico."
+    : "Projekti so shranjeni samo na tej napravi. Za skupno rabo vpiši podatke baze v config.js (glej navodila).";
+}
+function toProject(d){ return {...d, saved:true, hasGeometry: !!d.objText || (Array.isArray(d.parts) && d.parts.some(q=>q&&q.size)), extras: d.extras||[], wall: !!d.wall}; }
+async function refreshProjects(openId){
+  let list;
+  try{ list = await store.listProjects(); }catch(e){ setStatus("Projektov ni bilo mogoče naložiti: "+(e.message||e),"err"); return; }
+  const prevId = current && current.id;
+  projects.length = 0; projects.push(...list.map(toProject), demo);
+  let target = openId ? projects.find(p=>p.id===openId) : null;
+  if (!target) target = (prevId==="demo" && list.length) ? projects[0] : (projects.find(p=>p.id===prevId) || projects[0]);
+  if (!target) return;
+  if (target.id !== prevId || openId) openProject(target);
+  else { current = target; renderProjects(); }
+}
+function openProject(p){
+  current = p || demo; selected = null; selEl = null; setStatus(current.note||"");
+  renderProjects(); loadProject3D(current); renderCard(); renderList(); watchScans();
+  try{ localStorage.setItem("kjejekos.last", current.id); }catch(e){}
+}
+$("#project").addEventListener("change",e=>openProject(projects.find(p=>p.id===e.target.value)));
+const projSheet = $("#projSheet");
+$("#openProjects").addEventListener("click",()=>{ renderProjects(); projSheet.hidden=false; });
+$("#projClose").addEventListener("click",()=>projSheet.hidden=true);
+function downloadJSON(obj,name){
+  const blob = new Blob([JSON.stringify(obj)],{type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+}
+projSheet.addEventListener("click",async e=>{
+  if (e.target===projSheet){ projSheet.hidden=true; return; }
+  const o = e.target.closest("[data-open]"); if (o){ projSheet.hidden=true; openProject(projects.find(p=>p.id===o.dataset.open)); return; }
+  const x = e.target.closest("[data-exp]");
+  if (x){ const p = projects.find(q=>q.id===x.dataset.exp); if (p){ const {saved,hasGeometry,...doc} = p; downloadJSON({kjejekos:1,...doc}, p.name.replace(/[^\w\- ]+/g,"_")+".kjejekos.json"); } return; }
+  const d = e.target.closest("[data-del]"); if (!d) return;
+  if (!d.classList.contains("armed")){ d.classList.add("armed"); d.textContent="Res izbriši?"; setTimeout(()=>{ d.classList.remove("armed"); d.textContent="Izbriši"; },3000); return; }
+  const p = projects.find(q=>q.id===d.dataset.del); if (!p) return;
+  d.disabled = true; d.textContent = "Brišem …";
+  try{ await store.deleteProject(p.id); toast(`Projekt ${p.name} izbrisan`); await refreshProjects(); renderProjects(); }
+  catch(err){ d.disabled=false; d.textContent="Izbriši"; toast("Brisanje ni uspelo."); }
+});
+
+/* ---------- Uvoz ---------- */
+const sheet = $("#importSheet");
+$("#openImport").addEventListener("click",()=>{ projSheet.hidden=true; sheet.hidden=false; $("#impStatus").textContent=""; });
+$("#impCancel").addEventListener("click",()=>sheet.hidden=true);
+sheet.addEventListener("click",e=>{ if(e.target===sheet) sheet.hidden=true; });
+const readText = (f,enc) => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsText(f,enc); });
+const tick = () => new Promise(r=>setTimeout(r,0));
+const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+function loadPdfJs(){
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise((res,rej)=>{ const sc = document.createElement("script"); sc.src = PDFJS+"pdf.min.js";
+    sc.onload = ()=>{ window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS+"pdf.worker.min.js"; res(window.pdfjsLib); };
+    sc.onerror = ()=>rej(new Error("knjižnica za PDF se ni naložila")); document.head.append(sc); });
+}
+
+function parseCSV(text){
+  text = text.replace(/^﻿/,"");
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  if (!lines.length) return [];
+  const first = lines[0];
+  const delim = [";","\t",",","|"].sort((a,b)=>first.split(b).length-first.split(a).length)[0];
+  const split = l => { const out=[]; let cur="",q=false; for (const ch of l){ if(ch==='"'){q=!q;continue;} if(ch===delim&&!q){out.push(cur.trim());cur="";} else cur+=ch; } out.push(cur.trim()); return out; };
+  const head = split(first).map(h=>h.toLowerCase());
+  const col = re => head.findIndex(h=>re.test(h));
+  const ix = {
+    code: col(/(koda|šifra|sifra|barcode|črtna|crtna|qr|^id$|id kosa|št\.? kosa|st\.? kosa|pozicija|^poz)/),
+    name: col(/(naziv|^ime|opis|^kos$|^del$|name)/),
+    el:   col(/(element|omara|korpus|sklop|artikel)/),
+    L:    col(/(dolž|dolz|length|^l$)/),
+    W:    col(/(širin|sirin|width|^š$|^w$|^b$)/),
+    T:    col(/(debel|thick|^t$|^d$)/),
+    mat:  col(/(material|dekor|plošča|plosca)/),
+    edge: col(/(rob|kant|edge)/)
+  };
+  const edgeCols = head.map((h,i)=>/(rob|kant|edge)/.test(h)?i:-1).filter(i=>i>=0);
+  const isBand = v => v && !/^(-|—|0|ne|brez|none)$/i.test(String(v).trim());
+  if (ix.code<0) ix.code = 0;
+  const num = v => { const n = parseFloat(String(v||"").replace(",",".")); return isNaN(n)?null:n; };
+  return lines.slice(1).map(split).filter(r=>r[ix.code]).map(r=>({
+    code:r[ix.code], name:ix.name>=0?r[ix.name]:"Kos", element:ix.el>=0?r[ix.el]:"",
+    L:ix.L>=0?num(r[ix.L]):null, W:ix.W>=0?num(r[ix.W]):null, T:ix.T>=0?num(r[ix.T]):null,
+    mat:"_", matText:ix.mat>=0?r[ix.mat]:"",
+    edges: edgeCols.map(i=>r[i]).filter(isBand).join(" / "),
+    es: edgeCols.length>=4 ? Object.fromEntries(["L1","L2","W1","W2"].map((k,j)=>[k,r[edgeCols[j]]]).filter(([k,v])=>isBand(v)).map(([k,v])=>[k,shortEdge(v)])) : esFrom(edgeCols.length?r[edgeCols[0]]:"")
+  }));
+}
+
+
+
+function buildObj(text, parts){
+  const obj = new THREE.OBJLoader().parse(text);
+  const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3());
+  const sc = Math.max(size.x,size.y,size.z) > 50 ? 0.001 : 1; // mm -> m
+  obj.scale.setScalar(sc);
+  const b2 = new THREE.Box3().setFromObject(obj), c = b2.getCenter(new THREE.Vector3());
+  obj.position.sub(new THREE.Vector3(c.x,b2.min.y,c.z));
+  const codes = parts.map(p=>({p,n:norm(p.code)})).filter(x=>x.n).sort((a,b)=>b.n.length-a.n.length);
+  let matched = 0, meshes = 0;
+  obj.traverse(o=>{
+    if (!o.isMesh) return; meshes++;
+    const nm = norm(o.name || (o.parent&&o.parent.name) || "");
+    const hit = codes.find(x=>nm===x.n || nm.includes(x.n));
+    o.userData = {code:hit?hit.p.code:null, mat:"_"};
+    if (hit) matched++;
+  });
+  obj.userData.stats = {matched,meshes};
+  return obj;
+}
+
+
+$("#importForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const st = $("#impStatus"), files = [...$("#impFiles").files], btn = e.submitter;
+  if (!files.length){ st.textContent="Izberi datoteko: SAT, ZIP, CSV, OBJ ali izvožen projekt (.json)."; st.className="status err"; return; }
+  btn && (btn.disabled = true);
+  const say = (t,cls="") => { st.textContent = t; st.className = "status "+cls; };
+  try{
+    // razpakiraj ZIP in zberi vsebino po vrsti
+    const got = {sat:[], csv:[], obj:[], json:[], dxf:[], pdf:[], s3d:[]};
+    const take = async (name, getText, getBytes) => {
+      const x = name.toLowerCase().split(".").pop();
+      if (x==="sat") got.sat.push({name, text:await getText("latin1")});
+      else if (x==="dxf") got.dxf.push({name, text:await getText("latin1")});
+      else if (x==="s3d") got.s3d.push({name, text:await getText("utf8")});
+      else if (x==="pdf") got.pdf.push({name, bytes:await getBytes()});
+      else if (x==="csv"||x==="txt") got.csv.push({name, text:await getText("utf8")});
+      else if (x==="obj") got.obj.push({name, text:await getText("utf8")});
+      else if (x==="json") got.json.push({name, text:await getText("utf8")});
+    };
+    const unzip = async (data, label, depth) => {
+      if (!window.JSZip) throw new Error("knjižnica za ZIP se ni naložila");
+      say("Razpakiram "+label+" …"); const z = await JSZip.loadAsync(data);
+      for (const ent of Object.values(z.files)){
+        if (ent.dir) continue;
+        if (/\.zip$/i.test(ent.name) && depth < 2) { await unzip(await ent.async("uint8array"), ent.name, depth+1); continue; }
+        await take(ent.name, enc => ent.async(enc==="latin1" ? "binarystring" : "string"), () => ent.async("uint8array"));
+      }
+    };
+    for (const f of files){
+      if (/\.zip$/i.test(f.name)) await unzip(f, f.name, 0);
+      else await take(f.name, enc => readText(f, enc==="latin1" ? "ISO-8859-1" : undefined), async () => new Uint8Array(await f.arrayBuffer()));
+    }
+    const baseName = (files[0].name||"Projekt").replace(/\.[^.]+$/,"").replace(/_/g," ").replace(/^fwdokumentacija/i,"").trim();
+    const name = $("#impName").value.trim() || baseName;
+    let doc = null;
+    // etikete: PDF z imenom "etiket…", sicer kateri koli PDF, iz katerega se preberejo kode
+    let labels = [];
+    if (got.pdf.length && (got.dxf.length || got.sat.length)){
+      const pdfjs = await loadPdfJs();
+      const order = got.pdf.slice().sort((a,b)=>(/etiket/i.test(b.name)?1:0)-(/etiket/i.test(a.name)?1:0));
+      for (const p of order){
+        say("Berem etikete ("+p.name.split("/").pop()+") …");
+        labels = await MegaTischler.parseLabelsPdf(pdfjs, p.bytes, f=>{ st.textContent = `Berem etikete … ${Math.round(f*100)} %`; });
+        if (labels.length) break;
+      }
+    }
+    if (got.json.length){
+      const j = JSON.parse(got.json[0].text); if (!Array.isArray(j.parts)) throw new Error("datoteka ni projekt Kosmo");
+      const {kjejekos, id, saved, hasGeometry, ...rest} = j; doc = {...rest, name: $("#impName").value.trim() || rest.name || name, createdAt: Date.now()};
+    } else if (got.s3d.length){
+      say("Berem projekt 3D Corpus …"); await tick();
+      doc = CorpusImport.buildProject(CorpusImport.parseS3D(got.s3d[0].text), name);
+    } else if (got.dxf.length){
+      say("Berem 3D model (DXF) …"); await tick();
+      const {bodies, elNames} = MegaTischler.parseDxf(got.dxf[0].text, f=>{ st.textContent = `Berem 3D model … ${Math.round(f*100)} %`; });
+      doc = MegaTischler.buildProject(bodies, elNames, labels, name);
+    } else if (got.sat.length && labels.length){
+      say("Berem 3D model (SAT) …"); await tick();
+      const sb2 = SatImport.parseSat(got.sat[0].text).map(b=>({...b, kind: b.kind==="Kvader"?"Kvader":b.kind, element: b.path && (b.path.match(/^(\d{2})\./)||[])[1] || null}));
+      doc = MegaTischler.buildProject(sb2, {}, labels, name);
+    } else if (got.sat.length){
+      say("Berem 3D model (SAT) …"); await tick();
+      const bodies = SatImport.parseSat(got.sat[0].text, f=>{ st.textContent = `Berem 3D model … ${Math.round(f*100)} %`; });
+      doc = SatImport.buildProject(bodies, name);
+      doc.program = $("#impProg").value;
+      if (got.csv.length) doc.note = "Kosovnica je priložena, a še ni povezana s 3D modelom. Pošlji jo Claudu, da prilagodi povezovanje.";
+    } else if (got.csv.length || got.obj.length){
+      let parts = got.csv.length ? parseCSV(got.csv[0].text) : [];
+      let objText = got.obj.length ? got.obj[0].text : null;
+      if (objText && !parts.length){
+        new THREE.OBJLoader().parse(objText).traverse(o=>{ if(o.isMesh){ const n = norm(o.name||(o.parent&&o.parent.name)||""); if(n && !parts.some(p=>p.code===n)) parts.push({code:n,name:n,element:"",mat:"_"}); }});
+      }
+      if (!parts.length) throw new Error("v datotekah ni najdenih kosov");
+      const clean = parts.map(p=>{ const o={}; for (const k of ["code","name","element","L","W","T","mat","matText","edges","es"]) if (p[k]!=null && p[k]!=="") o[k]=p[k]; return o; });
+      doc = {name, program:$("#impProg").value, createdAt:Date.now(), parts:clean, objText};
+    } else throw new Error("ni podprtih datotek (SAT, ZIP, CSV, OBJ, JSON)");
+    say("Shranjujem projekt …");
+    const id = await store.saveProject(doc);
+    await refreshProjects(id);
+    sheet.hidden = true; $("#importForm").reset();
+    setStatus(`Uvoženo: ${doc.parts.length} kosov${doc.extras?`, ${doc.extras.length} delov okovja in sten`:""}.`,"ok");
+  }catch(err){
+    say("Uvoz ni uspel: " + (err && (err.message||err.code) || err) + ".", "err");
+  }finally{ btn && (btn.disabled = false); }
+});
+
+/* ---------- Skeniranje s kamero v živo ---------- */
+const cam = {el:$("#cam"), video:$("#camVideo"), stream:null, running:false, detector:null, busy:false};
+async function startCamera(){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ $("#photo").click(); return; }
+  cam.el.hidden = false; $("#camMsg").textContent = "Usmeri kamero v kodo na etiketi";
+  try{
+    cam.stream = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:"environment"}, width:{ideal:1280}, height:{ideal:720}}});
+  }catch(err){
+    cam.el.hidden = true;
+    setStatus(err && err.name==="NotAllowedError" ? "Dostop do kamere je zavrnjen. Dovoli kamero v nastavitvah brskalnika ali uporabi čitalnik." : "Kamere ni bilo mogoče odpreti. Uporabi fotografijo ali čitalnik.","err");
+    return;
+  }
+  cam.video.srcObject = cam.stream; await cam.video.play().catch(()=>{});
+  try{ const track = cam.stream.getVideoTracks()[0]; const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (caps.focusMode && caps.focusMode.includes("continuous")) track.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{}); }catch(e){}
+  if (!cam.detector && "BarcodeDetector" in window){
+    try{ const want = ["qr_code","code_39","code_128","data_matrix","ean_13","itf"]; const have = await BarcodeDetector.getSupportedFormats();
+      const f = want.filter(x=>have.includes(x)); if (f.length) cam.detector = new BarcodeDetector({formats:f}); }catch(e){ cam.detector = null; }
+  }
+  cam.running = true; scanLoop();
+}
+function stopCamera(){
+  cam.running = false; cam.el.hidden = true;
+  if (cam.stream){ cam.stream.getTracks().forEach(t=>t.stop()); cam.stream = null; }
+  cam.video.srcObject = null;
+}
+const camCanvas = document.createElement("canvas");
+async function scanLoop(){
+  if (!cam.running) return;
+  if (!cam.busy && cam.video.readyState >= 2){
+    cam.busy = true;
+    let text = null;
+    try{
+      if (cam.detector){ const r = await cam.detector.detect(cam.video); if (r && r.length) text = r[0].rawValue; }
+      else if (hasZX){
+        const vw = cam.video.videoWidth, vh = cam.video.videoHeight, cw = Math.round(vw*.8), ch = Math.round(vh*.6);
+        const sc = Math.min(1, 1000/cw); camCanvas.width = Math.round(cw*sc); camCanvas.height = Math.round(ch*sc);
+        camCanvas.getContext("2d",{willReadFrequently:true}).drawImage(cam.video,(vw-cw)/2,(vh-ch)/2,cw,ch,0,0,camCanvas.width,camCanvas.height);
+        try{ text = zxDecode(camCanvas); }catch(e){}
+      }
+    }catch(e){}
+    cam.busy = false;
+    if (text){
+      try{ navigator.vibrate && navigator.vibrate(60); }catch(e){}
+      stopCamera(); handleCode(text,"Kamera"); return;
+    }
+  }
+  setTimeout(()=>requestAnimationFrame(scanLoop), cam.detector ? 60 : 140);
+}
+$("#scanBtn").addEventListener("click",startCamera);
+$("#camClose").addEventListener("click",stopCamera);
+$("#camPhoto").addEventListener("click",()=>{ stopCamera(); $("#photo").click(); });
+document.addEventListener("visibilitychange",()=>{ if (document.hidden && cam.running) stopCamera(); });
+
+/* ---------- Čitalnik črtnih kod (USB / Bluetooth, deluje kot tipkovnica) ---------- */
+(function(){
+  let buf = "", last = 0, gaps = [], startVal = null, startEl = null;
+  const reset = () => { buf=""; gaps=[]; startVal=null; startEl=null; };
+  document.addEventListener("keydown", e=>{
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const now = performance.now(), el = document.activeElement;
+    const inSheet = el && el.closest && el.closest(".sheet");
+    if (inSheet) return;
+    if (e.key === "Enter" || e.key === "Tab"){
+      const fast = buf.length >= 3 && gaps.length && (gaps.reduce((a,b)=>a+b,0)/gaps.length) < 45;
+      if (fast){
+        e.preventDefault();
+        // počisti znake, ki jih je čitalnik vtipkal v polje (razen v polju za kodo)
+        if (startEl && startEl!==$("#codeIn") && "value" in startEl && startVal!=null){ startEl.value = startVal; startEl.dispatchEvent(new Event("input")); }
+        if (startEl === $("#codeIn")) startEl.value = "";
+        const code = buf; reset();
+        const r = $("#reader"); r.classList.add("flash"); setTimeout(()=>r.classList.remove("flash"),600);
+        handleCode(code, "Čitalnik");
+      } else reset();
+      return;
+    }
+    if (e.key.length !== 1){ return; }
+    if (now - last > 80){ reset(); startEl = el; startVal = el && "value" in el ? el.value : null; }
+    else gaps.push(now - last);
+    buf += e.key; last = now;
+  }, true);
+})();
+
+
+
+/* ---------- Prijava v skupno bazo ---------- */
+// prijava ostane shranjena (localStorage) ali samo do zaprtja (sessionStorage), po izbiri uporabnika
+const remembered = () => { try{ return localStorage.getItem("kjejekos.remember") !== "0"; }catch(e){ return true; } };
+const authStorage = {
+  getItem: k => { try{ return localStorage.getItem(k) ?? sessionStorage.getItem(k); }catch(e){ return null; } },
+  setItem: (k,v) => { try{ (remembered() ? localStorage : sessionStorage).setItem(k,v); (remembered() ? sessionStorage : localStorage).removeItem(k); }catch(e){} },
+  removeItem: k => { try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }
+};
+let authMode = "login";
+function setAuthMode(mode){
+  authMode = mode; const m = $("#loginMsg"); m.textContent = ""; m.className = "status";
+  const t = {login:["Prijava","Prijavi se z računom svoje delavnice.","Prijava"],
+             signup:["Nov račun","Ustvari račun. Nato ustvariš svojo delavnico ali se pridružiš obstoječi s kodo.","Ustvari račun"],
+             forgot:["Pozabljeno geslo","Vpiši e-naslov in poslali ti bomo povezavo za novo geslo.","Pošlji povezavo"]}[mode];
+  $("#loginTitle").textContent = t[0]; $("#loginLead").textContent = t[1]; $("#loginBtn").textContent = t[2];
+  $("#passField").hidden = mode === "forgot"; $("#loginPass").required = mode !== "forgot";
+  $("#loginPass").autocomplete = mode === "signup" ? "new-password" : "current-password";
+  $("#rememberRow").hidden = mode === "forgot";
+  $("#toSignup").textContent = mode === "login" ? "Nimaš računa? Ustvari ga" : "Že imaš račun? Prijava";
+  $("#toForgot").hidden = mode !== "login";
+}
+$("#toSignup").addEventListener("click",()=>setAuthMode(authMode === "login" ? "signup" : "login"));
+$("#toForgot").addEventListener("click",()=>setAuthMode("forgot"));
+async function ensureLogin(){
+  const {data} = await sb.auth.getSession();
+  if (data && data.session) return;
+  const ls = $("#loginSheet"); ls.hidden = false; setAuthMode("login");
+  try{ $("#remember").checked = remembered(); }catch(e){}
+  await new Promise(resolve=>{
+    $("#loginForm").onsubmit = async ev=>{
+      ev.preventDefault(); const m = $("#loginMsg"); m.className = "status";
+      const email = $("#loginEmail").value.trim(), password = $("#loginPass").value;
+      try{ localStorage.setItem("kjejekos.remember", $("#remember").checked ? "1" : "0"); }catch(e){}
+      if (authMode === "forgot"){
+        m.textContent = "Pošiljam …";
+        const {error} = await sb.auth.resetPasswordForEmail(email,{redirectTo: location.origin + location.pathname});
+        m.textContent = error ? "Pošiljanje ni uspelo. Poskusi čez nekaj minut." : "Če račun obstaja, smo ti poslali povezavo. Preveri e-pošto.";
+        m.className = "status " + (error ? "err" : "ok"); return;
+      }
+      if (authMode === "signup"){
+        m.textContent = "Ustvarjam račun …";
+        const {data:d, error} = await sb.auth.signUp({email, password, options:{emailRedirectTo: location.origin + location.pathname}});
+        if (error){ m.textContent = /already|registered/i.test(error.message) ? "Ta e-naslov je že registriran. Prijavi se." : /disabled|not allowed/i.test(error.message) ? "Ustvarjanje novih računov je trenutno izklopljeno." : "Računa ni bilo mogoče ustvariti: " + error.message; m.className = "status err"; return; }
+        if (!d.session){ m.textContent = "Poslali smo ti e-pošto. Potrdi račun s klikom na povezavo, nato se prijavi tukaj."; m.className = "status ok"; setAuthMode("login"); $("#loginMsg").textContent = "Potrdi e-pošto, nato se prijavi."; $("#loginMsg").className = "status ok"; return; }
+        ls.hidden = true; resolve(); return;
+      }
+      m.textContent = "Prijavljam …";
+      const {error} = await sb.auth.signInWithPassword({email, password});
+      if (error){ m.textContent = /confirm/i.test(error.message) ? "E-naslov še ni potrjen. Preveri e-pošto." : "Prijava ni uspela: napačen e-naslov ali geslo."; m.className = "status err"; return; }
+      ls.hidden = true; resolve();
+    };
+  });
+}
+// delavnica: ustvari novo ali se pridruži s kodo
+function ensureWorkshop(){
+  const ss = $("#setupSheet"); ss.hidden = false;
+  return new Promise(resolve=>{
+    const done = async (fn,arg) => { const m=$("#setupMsg"); m.textContent="Shranjujem …"; m.className="status";
+      const {error} = await sb.rpc(fn,arg);
+      if (error){ m.textContent = /koda|code/i.test(error.message) ? "Koda ni pravilna. Preveri jo pri vodji delavnice." : "Ni uspelo: " + error.message; m.className="status err"; return; }
+      ss.hidden = true; resolve(); };
+    $("#createWs").onsubmit = e=>{ e.preventDefault(); done("create_workshop",{p_name:$("#wsName").value.trim()}); };
+    $("#joinWs").onsubmit = e=>{ e.preventDefault(); done("join_workshop",{p_code:$("#wsCode").value.trim()}); };
+  });
+}
+function showWsInfo(w, role){
+  const el = $("#wsInfo"); if (!el) return;
+  const trial = !w.active && w.trial_until ? `Brezplačen preizkus do <b>${new Date(w.trial_until).toLocaleDateString("sl-SI")}</b>` : "Naročnina je aktivna";
+  el.innerHTML = `<div><b>${esc(w.name)}</b> · ${role==="vodja"?"vodja":"član"}</div><div>${trial}</div>` +
+    (role==="vodja" && w.invite_code ? `<div>Koda za sodelavce (vpišejo jo ob prvi prijavi):</div><div class="codebig">${esc(w.invite_code)}</div>` : "");
+  el.hidden = false;
+}
+$("#logout") && $("#logout").addEventListener("click",async()=>{ if (sb){ await sb.auth.signOut(); location.reload(); } });
+
+/* ---------- Zagon ---------- */
+init3D(); openProject(demo);
+if (!hasZX) setStatus("Bralnik kod se ni naložil. Kodo lahko vpišeš ročno.","err");
+$("#listhead-clear").addEventListener("click",e=>{ const b=e.currentTarget;
+  if (!b.classList.contains("armed")){ b.classList.add("armed","danger"); b.textContent="Res počisti?"; setTimeout(()=>{ b.classList.remove("armed","danger"); b.textContent="Počisti"; },3000); return; }
+  b.classList.remove("armed","danger"); b.textContent="Počisti"; clearScans(); toast("Skenirano počiščeno"); });
+
+(async()=>{
+  if (cloud){
+    sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage:authStorage}});
+    sb.auth.onAuthStateChange(ev=>{ if (ev === "PASSWORD_RECOVERY"){ $("#loginSheet").hidden = true; $("#pwSheet").hidden = false; } });
+    $("#pwForm").addEventListener("submit",async e=>{ e.preventDefault(); const m=$("#pwMsg");
+      const {error} = await sb.auth.updateUser({password:$("#newPass").value});
+      m.textContent = error ? "Gesla ni bilo mogoče shraniti: " + error.message : "Geslo je shranjeno."; m.className = "status " + (error?"err":"ok");
+      if (!error) setTimeout(()=>{ $("#pwSheet").hidden = true; location.replace(location.pathname); },900); });
+    await ensureLogin();
+    $("#logout").hidden = false;
+    let mem = (await sb.from("members").select("workshop_id,role,workshops(name,active,trial_until,invite_code)")).data || [];
+    if (!mem.length){ await ensureWorkshop(); mem = (await sb.from("members").select("workshop_id,role,workshops(name,active,trial_until,invite_code)")).data || []; }
+    const m = mem.find(x=>x.workshops);
+    if (!m){
+      setStatus("Preizkusna doba ali naročnina delavnice je potekla. Za podaljšanje piši na mizar.stajl@siol.net.","err");
+      projects.length = 0; projects.push(demo); renderProjects(); return;
+    }
+    WS = m.workshop_id; showWsInfo(m.workshops, m.role);
+    const sub = document.querySelector(".brand small"); if (sub) sub.textContent = m.workshops.name;
+    store.subscribe(()=>refreshProjects(), pid=>{ if (pid===current.id) loadScans(current); });
+  }
+  let last = null; try{ last = localStorage.getItem("kjejekos.last"); }catch(e){}
+  await refreshProjects(last && last!=="demo" ? last : null);
+})();
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+})();
+</script>
+</body>
+</html>
