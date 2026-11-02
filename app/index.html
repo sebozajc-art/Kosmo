@@ -214,14 +214,42 @@ html{padding-top:env(safe-area-inset-top,0px)}
 .scanbtn{border:0;width:100%;color:#fff}
 .cam{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column}
 .cam video{flex:1;min-height:0;width:100%;object-fit:cover}
-.cam .aim{position:absolute;left:10%;right:10%;top:22%;bottom:34%;border:2px solid rgba(255,255,255,.85);border-radius:18px;box-shadow:0 0 0 100vmax rgba(0,0,0,.35);pointer-events:none}
+.cam .aim{position:absolute;left:50%;top:40%;width:min(72vw,360px);height:min(22vh,170px);transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.85);border-radius:18px;box-shadow:0 0 0 100vmax rgba(0,0,0,.35);pointer-events:none}
 .cam .aim::after{content:"";position:absolute;left:8%;right:8%;top:50%;height:2px;background:var(--hit);box-shadow:0 0 12px var(--hit);animation:sweep 1.6s ease-in-out infinite alternate}
 @keyframes sweep{from{transform:translateY(-60px)}to{transform:translateY(60px)}}
 @media (prefers-reduced-motion:reduce){.cam .aim::after{animation:none}}
 .cam-bar{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:12px;align-items:center;
   padding:18px max(16px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
   background:linear-gradient(to top,rgba(0,0,0,.8),transparent);color:#fff;text-align:center}
-.cam-bar .row2{display:flex;gap:10px}
+.cam-bar .row2{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.cam-hint{position:absolute;left:0;right:0;top:calc(40% - min(11vh,85px) - 40px);text-align:center;color:rgba(255,255,255,.85);font-size:13px;pointer-events:none}
+#camMsg{min-height:2.6em;display:flex;align-items:center;justify-content:center;font-weight:600}
+#camMsg.ok{color:#7CF0B0} #camMsg.err{color:#FFB09A}
+.cam .aim.hitflash{border-color:#5CCB91;box-shadow:0 0 0 100vmax rgba(0,0,0,.35),0 0 24px rgba(92,203,145,.8)}
+.cam-cont{display:flex;align-items:center;gap:8px;font-size:14px;color:#fff;cursor:pointer}
+.cam-cont input{width:18px;height:18px;accent-color:var(--hit)}
+.cam-count{font-family:var(--f-mono);font-size:12px;color:rgba(255,255,255,.7)}
+.recutbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:1px dashed var(--line);background:transparent;border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--muted);font-weight:600;font-size:13px}
+.recutbtn:hover{border-color:var(--warn);color:var(--warn)}
+.recutbtn svg{width:16px;height:16px}
+.rcflag{border:1px solid color-mix(in srgb,var(--warn) 55%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent);border-radius:12px;padding:10px 12px;display:flex;gap:12px;align-items:center}
+.rcflag .t{flex:1;min-width:0;font-size:13px;color:var(--ink)} .rcflag .t small{display:block;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.rcflag img,.rc img{width:52px;height:52px;object-fit:cover;border-radius:8px;flex:none;cursor:zoom-in}
+.recuts{border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.recuts .head{display:flex;align-items:center;gap:10px}
+.recuts h2{font-family:var(--f-display);font-weight:700;font-stretch:112%;font-size:16px;margin:0;margin-right:auto;color:var(--warn)}
+.rc{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--hair)}
+.rc .t{flex:1;min-width:0;font-size:13px;color:var(--muted)} .rc .t b{color:var(--ink);font-size:14px}
+.rc .m{font-family:var(--f-mono);font-size:12px;color:var(--ink);margin-top:3px}
+.rc .acts{display:flex;flex-direction:column;gap:6px}
+.rc .acts .btn{padding:6px 10px;font-size:12px}
+.reasons{display:flex;flex-wrap:wrap;gap:6px}
+.reasons .btn{padding:7px 12px;font-size:13px}
+.reasons .btn.on{background:var(--warn);border-color:var(--warn);color:#1a0d08}
+.field textarea{font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink);font-size:14px;border:1px solid var(--hair);background:var(--surface-2);border-radius:12px;padding:10px 12px;min-height:70px;resize:vertical}
+.rcprev{max-width:100%;max-height:180px;border-radius:12px;object-fit:contain;align-self:flex-start}
+.imgview{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
+.imgview img{max-width:100%;max-height:100%;border-radius:10px}
 .cam-bar .btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff}
 </style>
 </head>
@@ -269,6 +297,11 @@ html{padding-top:env(safe-area-inset-top,0px)}
 
     <div class="card" id="card"></div>
 
+    <section class="recuts" id="recuts" hidden>
+      <div class="head"><h2 id="rcTitle">Za ponoven razrez</h2><button class="btn ghost" type="button" id="rcCopy" style="padding:4px 8px;font-size:12px">Kopiraj seznam</button></div>
+      <div id="rcList"></div>
+    </section>
+
     <div>
       <div class="listhead">
         <h2>Kosi v projektu</h2>
@@ -294,6 +327,22 @@ html{padding-top:env(safe-area-inset-top,0px)}
       <button class="btn primary" type="button" id="openImport">Uvozi nov projekt</button>
     </div>
   </div>
+</div>
+
+<div class="sheet" id="recutSheet" hidden>
+  <form class="sheet-in" id="recutForm">
+    <h3>Ponoven razrez</h3>
+    <p id="rcPart"></p>
+    <div class="field">Razlog<div class="reasons" id="rcReasons">
+      <button type="button" class="btn" data-r="Poškodovan">Poškodovan</button><button type="button" class="btn" data-r="Napačna mera">Napačna mera</button>
+      <button type="button" class="btn" data-r="Napačen material">Napačen material</button><button type="button" class="btn" data-r="Napačen rob">Napačen rob</button>
+      <button type="button" class="btn" data-r="Manjka">Manjka</button><button type="button" class="btn" data-r="Drugo">Drugo</button></div></div>
+    <label class="field">Opomba<textarea id="rcNote" placeholder="npr. odkrušen rob spredaj levo"></textarea></label>
+    <div class="field">Fotografija<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="rcPhotoBtn">Dodaj fotografijo</button><button type="button" class="btn ghost" id="rcPhotoDel" hidden>Odstrani</button></div>
+      <input id="rcPhoto" type="file" accept="image/*" capture="environment" hidden><img id="rcPrev" class="rcprev" alt="Fotografija kosa" hidden></div>
+    <div class="status" id="rcStatus"></div>
+    <div class="sheet-actions"><button class="btn ghost" type="button" id="rcCancel">Prekliči</button><button class="btn primary" type="submit">Dodaj na seznam</button></div>
+  </form>
 </div>
 
 <div class="sheet" id="importSheet" hidden>
@@ -355,9 +404,11 @@ html{padding-top:env(safe-area-inset-top,0px)}
 
 <div class="cam" id="cam" hidden>
   <video id="camVideo" playsinline muted autoplay></video>
+  <div class="cam-hint" aria-hidden="true">V okvir postavi samo eno kodo</div>
   <div class="aim" aria-hidden="true"></div>
   <div class="cam-bar">
-    <div id="camMsg">Usmeri kamero v kodo na etiketi</div>
+    <div id="camMsg" role="status" aria-live="polite">Usmeri kamero v kodo na etiketi</div>
+    <label class="cam-cont"><input type="checkbox" id="camCont"> Zaporedno skeniranje <span class="cam-count" id="camCount"></span></label>
     <div class="row2"><button class="btn" type="button" id="camPhoto">Fotografiraj namesto tega</button><button class="btn primary" type="button" id="camClose">Zapri</button></div>
   </div>
 </div>
@@ -613,7 +664,7 @@ function restyle(){
   if (!root) return;
   clearBands();
   const hit = new THREE.Color(css("--hit")||"#FF6A1F"), ok = new THREE.Color(css("--ok")||"#2E8A57"), ghost = new THREE.Color(css("--ghost")||"#C7CDD2");
-  const edgeCol = new THREE.Color(css("--edge")||"#1D2226");
+  const edgeCol = new THREE.Color(css("--edge")||"#1D2226"), warnCol = new THREE.Color(css("--warn")||"#FF8466");
   const set = scanned.get(current.id) || new Set();
   root.traverse(o=>{
     if (!o.isMesh || !o.userData || o.userData.isBand) return;
@@ -623,7 +674,8 @@ function restyle(){
     const part = o.userData.part, code = o.userData.code, isSel = !!selected && part===selected;
     const inEl = focus && part && elKey(part)===selEl;
     const mat = o.material, edge = o.children.find(c=>c.userData.isEdge);
-    const normal = () => set.has(code) ? base.clone().lerp(ok,.35) : base;
+    const isRc = !!part && recuts.some(r=>partOfRecut(r)===part);
+    const normal = () => isRc ? base.clone().lerp(warnCol,.55) : set.has(code) ? base.clone().lerp(ok,.35) : base;
     edge && edge.material.color.copy(edgeCol);
     mat.emissive.setRGB(0,0,0); o.renderOrder = 0;
     if (isSel){ mat.color.set("#C9CDD1").lerp(base,.15); if(!xray) mat.emissive.set(hit).multiplyScalar(.18); mat.opacity=1; mat.depthWrite=true; o.renderOrder=2; o.castShadow=true; edge&&(edge.material.color.setRGB(1,1,1), edge.material.opacity=.85); }
@@ -738,6 +790,12 @@ function renderElCard(card){
     ${e.items.length?`<details class="hwlist"><summary>Vse okovje (${e.items.length})</summary><ul>${e.items.map(it=>`<li><b>${it.q}×</b>${esc(it.n)}</li>`).join("")}</ul></details>`:""}
     <div class="empty-msg">Tapni kos v omarici za mere in robove.</div>`;
 }
+function recutBlock(p){
+  const r = recutOf(p);
+  if (r) return `<div class="rcflag">${r.photo?`<img src="${esc(r.photo)}" alt="Fotografija">`:""}<div class="t"><b>Za ponoven razrez</b><small>${esc([r.reason,r.note].filter(Boolean).join(" · ")||"brez opombe")}</small></div><button class="btn" type="button" data-rcdone>Opravljeno</button></div>`;
+  if (current.id==="demo") return "";
+  return `<button type="button" class="recutbtn" data-rc><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg>Kos je poškodovan – ponoven razrez</button>`;
+}
 function elLine(p){
   const e = elInfo(elKey(p));
   const nls = e.runners.map(r=>r.nl).filter(Boolean);
@@ -762,7 +820,10 @@ function renderCard(){
         <dt>Mere</dt><dd>${fmt(p.L)} × ${fmt(p.W)}${p.T?" × "+fmt(p.T):""} mm</dd>
         <dt>Material</dt><dd>${esc(m&&p.mat!=="_"?m.label:(p.matText||"–"))}</dd>
         <dt>Robovi</dt><dd>${esc(p.edges||"–")}</dd>
-      </dl></div>${twinBar(p)}${elLine(p)}`;
+      </dl></div>${twinBar(p)}${recutBlock(p)}${elLine(p)}`;
+  const rcb = card.querySelector("[data-rc]"); rcb && rcb.addEventListener("click",()=>openRecut(p));
+  const rcd = card.querySelector("[data-rcdone]"); rcd && rcd.addEventListener("click",()=>{ const r = recutOf(p); r && markRecutDone(r); });
+  const rci = card.querySelector(".rcflag img"); rci && rci.addEventListener("click",()=>showImg(rci.src));
   card.querySelector("#toEl").addEventListener("click",()=>selectEl(elKey(p)));
   const tb = card.querySelector(".twinbar");
   if (tb) tb.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{ const t = twinsOf(p)[+b.dataset.i]; if (t) select(t,{mark:false}); }));
@@ -841,20 +902,33 @@ function findPart(raw){
   for (const c of cands){ if (c.length>=4){ const p = current.parts.find(p=>norm(p.code).replace(/-/g,"")===c.replace(/-/g,"")); if (p) return p; } }
   return null;
 }
-function handleCode(raw,how){
+// kratek pisk ob skenu (zvok se odklene ob prvem dotiku zaslona)
+let actx = null;
+function unlockAudio(){ try{ if (!actx){ const A = window.AudioContext || window.webkitAudioContext; if (A) actx = new A(); } actx && actx.state==="suspended" && actx.resume(); }catch(e){} }
+document.addEventListener("pointerdown", unlockAudio, {passive:true});
+function beep(ok=true){
+  try{ navigator.vibrate && navigator.vibrate(ok?60:[40,60,40]); }catch(e){}
+  try{ if (!actx) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(ok?1320:330, t); if (!ok) o.frequency.setValueAtTime(260, t+.12);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(.25,t+.01); g.gain.exponentialRampToValueAtTime(0.0001,t+(ok?.12:.28));
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t+(ok?.13:.3)); }catch(e){}
+}
+function handleCode(raw,how,{quiet=false}={}){
   const p = findPart(raw);
-  if (!p){ setStatus(`Koda ${norm(raw)} ni v projektu »${current.name}«. Preveri, ali je izbran pravi projekt.`,"err"); return; }
+  if (!p){ if (how!=="Vpisano") beep(false); setStatus(`Koda ${norm(raw)} ni v projektu »${current.name}«. Preveri, ali je izbran pravi projekt.`,"err"); return {ok:false}; }
+  if (how!=="Vpisano") beep(true);
   const all = p._all; delete p._all;
   if (all && all.length > 1){   // ista koda na več kosih (npr. 3D Corpus): izberi pravega
     const st = $("#status"); st.className = "status ok";
     st.innerHTML = `${esc(how)}: koda ${esc(norm(raw))} je na ${all.length} kosih. Izberi pravega:<div class="choices">` +
       all.map((q,i)=>`<button type="button" class="btn choice" data-i="${i}">${esc(q.element)} · ${esc(q.name)} <span>${fmt(q.L)}×${fmt(q.W)}</span></button>`).join("") + "</div>";
     st.querySelectorAll(".choice").forEach(b=>b.addEventListener("click",()=>{ const q = all[+b.dataset.i]; setStatus(`${q.name}, ${q.element}`,"ok"); select(q,{mark:true}); }));
-    select(all[0],{mark:false}); return;
+    select(all[0],{mark:quiet}); return {ok:true, p:all[0], n:all.length};
   }
   setStatus(`${how}: ${norm(raw)} → ${p.name}, ${p.element}`,"ok");
-  toast(`${p.name} · ${p.element}`);
+  if (!quiet) toast(`${p.name} · ${p.element}`);
   select(p,{mark:true});
+  return {ok:true, p, n:1};
 }
 
 /* ---------- Branje kode s fotografije ---------- */
@@ -914,6 +988,36 @@ $("#viewMode").addEventListener("click",()=>{
 });
 syncViewBtn();
 
+$("#rcReasons").addEventListener("click",e=>{ const b = e.target.closest(".btn"); if (!b) return; b.classList.toggle("on"); });
+$("#rcPhotoBtn").addEventListener("click",()=>$("#rcPhoto").click());
+$("#rcPhoto").addEventListener("change",async e=>{ const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try{ rcPhotoData = await shrinkPhoto(f); $("#rcPrev").src = rcPhotoData; $("#rcPrev").hidden = false; $("#rcPhotoDel").hidden = false; }
+  catch(_){ $("#rcStatus").textContent = "Fotografije ni bilo mogoče odpreti."; } });
+$("#rcPhotoDel").addEventListener("click",()=>{ rcPhotoData = null; $("#rcPrev").hidden = true; $("#rcPhotoDel").hidden = true; });
+$("#rcCancel").addEventListener("click",()=>$("#recutSheet").hidden = true);
+$("#recutForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const sh = $("#recutSheet"), q = current.parts[+sh.dataset.i]; if (!q) return;
+  const reason = [...$("#rcReasons").querySelectorAll(".btn.on")].map(b=>b.dataset.r).join(", ");
+  const r = {project_id: current.id, code: q.code, part_idx: current.parts.indexOf(q), reason, note: $("#rcNote").value.trim(), photo: rcPhotoData,
+    part: {name:q.name, element:q.element, L:q.L, W:q.W, T:q.T, matText:q.matText||"", mat:q.mat, edges:q.edges||""}};
+  const btn = e.submitter; btn && (btn.disabled = true); $("#rcStatus").textContent = "Shranjujem …";
+  try{ await store.addRecut(r); sh.hidden = true; toast("Dodano na seznam za razrez"); await loadRecuts(current); }
+  catch(err){ $("#rcStatus").textContent = "Ni bilo mogoče shraniti: " + (err.message||err); }
+  finally{ btn && (btn.disabled = false); }
+});
+$("#rcList").addEventListener("click",e=>{
+  const img = e.target.closest("[data-big]"); if (img){ showImg(img.src); return; }
+  const s = e.target.closest("[data-show]"), d = e.target.closest("[data-done]");
+  if (s){ const p = partOfRecut(recuts[+s.dataset.show]); p ? select(p) : toast("Kosa ni več v projektu"); }
+  if (d){ const r = recuts[+d.dataset.done]; r && markRecutDone(r); }
+});
+$("#rcCopy").addEventListener("click",async()=>{
+  const t = recutText();
+  try{ await navigator.clipboard.writeText(t); toast("Seznam kopiran – prilepi ga v sporočilo"); }
+  catch(_){ try{ if (navigator.share){ await navigator.share({title:"Ponoven razrez", text:t}); return; } }catch(__){} toast("Kopiranje ni uspelo"); }
+});
+
 /* ---------- Shramba: Supabase (skupno za vse naprave) ali ta naprava (IndexedDB) ---------- */
 const CFG = window.KJEJEKOS_CONFIG || {};
 const cloud = !!(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase);
@@ -921,10 +1025,10 @@ let sb = null, unsubScans = null, WS = null;
 
 const idb = (()=>{ // majhna lokalna shramba za način brez oblaka
   let dbp = null;
-  const open = () => dbp || (dbp = new Promise((res,rej)=>{ const r = indexedDB.open("kjejekos",1);
-    r.onupgradeneeded = () => { r.result.createObjectStore("projects"); r.result.createObjectStore("scans"); };
+  const open = () => dbp || (dbp = new Promise((res,rej)=>{ const r = indexedDB.open("kjejekos",2);
+    r.onupgradeneeded = () => { const d = r.result; ["projects","scans","recuts"].forEach(n=>{ if (!d.objectStoreNames.contains(n)) d.createObjectStore(n); }); };
     r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
-  const tx = async (store,mode,fn) => { const db = await open(); return new Promise((res,rej)=>{ const t = db.transaction(store,mode); const st = t.objectStore(store); const out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); };
+  const tx = async (store,mode,fn) => { const db = await open(); return new Promise((res,rej)=>{ const t = db.transaction(store,mode); const st = t.objectStore(store); const out = fn(st); t.oncomplete = () => res(out instanceof IDBRequest ? out.result : out); t.onerror = () => rej(t.error); }); };
   return {
     all: store => tx(store,"readonly",st=>st.getAll()),
     get: (store,k) => tx(store,"readonly",st=>st.get(k)),
@@ -967,9 +1071,22 @@ const store = {
     if (cloud){ await sb.from("scans").delete().eq("project_id",pid); return; }
     await idb.del("scans",pid);
   },
-  subscribe(onProjects,onScans){ // spremembe z drugih naprav
+  async listRecuts(pid){
+    if (cloud){ const {data,error} = await sb.from("recuts").select("*").eq("project_id",pid).eq("done",false).order("created_at"); if (error) throw error; return data; }
+    return ((await idb.get("recuts",pid)) || []).filter(r=>!r.done);
+  },
+  async addRecut(r){
+    if (cloud){ const {error} = await sb.from("recuts").insert({...r, workshop_id:WS}); if (error) throw error; return; }
+    const all = (await idb.get("recuts",r.project_id)) || []; all.push({...r, id:"r"+Date.now().toString(36), created_at:Date.now(), done:false}); await idb.put("recuts",r.project_id,all);
+  },
+  async doneRecut(pid,id){
+    if (cloud){ const {error} = await sb.from("recuts").update({done:true}).eq("id",id); if (error) throw error; return; }
+    const all = (await idb.get("recuts",pid)) || []; const x = all.find(r=>r.id===id); if (x) x.done = true; await idb.put("recuts",pid,all);
+  },
+  subscribe(onProjects,onScans,onRecuts){ // spremembe z drugih naprav
     if (!cloud) return;
     sb.channel("kjejekos")
+      .on("postgres_changes",{event:"*",schema:"public",table:"recuts",filter:"workshop_id=eq."+WS},p=>onRecuts && onRecuts((p.new&&p.new.project_id)||(p.old&&p.old.project_id)))
       .on("postgres_changes",{event:"*",schema:"public",table:"projects",filter:"workshop_id=eq."+WS},()=>onProjects())
       .on("postgres_changes",{event:"*",schema:"public",table:"scans",filter:"workshop_id=eq."+WS},p=>onScans((p.new&&p.new.project_id)||(p.old&&p.old.project_id)))
       .subscribe();
@@ -980,7 +1097,55 @@ function saveScan(code){ const pid = current.id; store.addScan(pid,code).catch((
 async function loadScans(p){
   try{ const s = await store.getScans(p.id); scanned.set(p.id,s); if (p===current){ renderCard(); renderList(); restyle(); } }catch(e){}
 }
-function watchScans(){ loadScans(current); }
+function watchScans(){ loadScans(current); loadRecuts(current); }
+/* ---------- Ponoven razrez ---------- */
+let recuts = [];   // odprti zahtevki za trenutni projekt
+const partOfRecut = r => (r.part_idx!=null && current.parts[r.part_idx] && current.parts[r.part_idx].code===r.code) ? current.parts[r.part_idx] : current.parts.find(q=>q.code===r.code);
+const recutOf = p => p && recuts.find(r=>partOfRecut(r)===p);
+async function loadRecuts(p){
+  if (!p || p.id==="demo"){ recuts = []; renderRecuts(); return; }
+  try{ const list = await store.listRecuts(p.id); if (p===current){ recuts = list; renderRecuts(); renderCard(); restyle(); } }catch(e){ recuts = []; renderRecuts(); }
+}
+const dimTxt = q => `${fmt(q.L)} × ${fmt(q.W)}${q.T?" × "+fmt(q.T):""} mm`;
+function renderRecuts(){
+  const box = $("#recuts"); if (!box) return;
+  box.hidden = !recuts.length;
+  $("#rcTitle").textContent = `Za ponoven razrez (${recuts.length})`;
+  $("#rcList").innerHTML = recuts.map((r,i)=>{ const q = r.part||{};
+    return `<div class="rc">${r.photo?`<img src="${esc(r.photo)}" alt="Fotografija" data-big="${i}">`:""}
+      <div class="t"><b>${esc(q.name||r.code)}</b> · ${esc(q.element||"")}
+        <div class="m">${dimTxt(q)} · ${esc(q.matText||q.mat||"")}</div>
+        <div>${esc(q.edges||"")}</div>
+        <div style="color:var(--warn)">${esc([r.reason,r.note].filter(Boolean).join(" · "))}</div></div>
+      <div class="acts"><button class="btn" type="button" data-show="${i}">Pokaži</button><button class="btn" type="button" data-done="${i}">Opravljeno</button></div></div>`; }).join("");
+}
+function recutText(){
+  return `Ponoven razrez · ${current.name}\n` + recuts.map((r,i)=>{ const q = r.part||{};
+    return `${i+1}. ${q.name||""} (${q.element||""}) – ${dimTxt(q)}, ${q.matText||""}, robovi: ${q.edges||"–"}, koda ${r.code}${r.reason?" – "+r.reason:""}${r.note?": "+r.note:""}`; }).join("\n");
+}
+async function markRecutDone(r){
+  recuts = recuts.filter(x=>x!==r); renderRecuts(); renderCard(); restyle();
+  try{ await store.doneRecut(current.id, r.id); toast("Označeno kot opravljeno"); }catch(e){ toast("Ni bilo mogoče shraniti."); loadRecuts(current); }
+}
+function showImg(src){ const v = document.createElement("div"); v.className = "imgview"; v.innerHTML = `<img alt="Fotografija kosa">`; v.querySelector("img").src = src; v.addEventListener("click",()=>v.remove()); document.body.append(v); }
+let rcPhotoData = null;
+function openRecut(p){
+  const sh = $("#recutSheet"); sh.hidden = false; sh.dataset.i = current.parts.indexOf(p);
+  $("#rcPart").textContent = `${p.name} · ${p.element||""} · ${dimTxt(p)}`;
+  $("#rcNote").value = ""; $("#rcStatus").textContent = ""; rcPhotoData = null; $("#rcPrev").hidden = true; $("#rcPhotoDel").hidden = true;
+  $("#rcReasons").querySelectorAll(".btn").forEach((b,i)=>b.classList.toggle("on", i===0));
+}
+async function shrinkPhoto(file){
+  const url = URL.createObjectURL(file);
+  try{
+    const img = await new Promise((res,rej)=>{ const i = new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+    const sc = Math.min(1, 900/Math.max(img.naturalWidth,img.naturalHeight)), c = document.createElement("canvas");
+    c.width = Math.round(img.naturalWidth*sc); c.height = Math.round(img.naturalHeight*sc);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL("image/jpeg",.72);
+  } finally { URL.revokeObjectURL(url); }
+}
+
 async function clearScans(){ const p=current; scanned.set(p.id,new Set()); renderCard(); renderList(); restyle(); try{ await store.clearScans(p.id); }catch(e){} }
 
 /* ---------- Projekti ---------- */
@@ -1010,7 +1175,7 @@ async function refreshProjects(openId){
   else { current = target; renderProjects(); }
 }
 function openProject(p){
-  current = p || demo; selected = null; selEl = null; setStatus(current.note||"");
+  current = p || demo; selected = null; selEl = null; recuts = []; renderRecuts(); setStatus(current.note||"");
   renderProjects(); loadProject3D(current); renderCard(); renderList(); watchScans();
   try{ localStorage.setItem("kjejekos.last", current.id); }catch(e){}
 }
@@ -1195,8 +1360,10 @@ $("#importForm").addEventListener("submit",async e=>{
 /* ---------- Skeniranje s kamero v živo ---------- */
 const cam = {el:$("#cam"), video:$("#camVideo"), stream:null, running:false, detector:null, busy:false};
 async function startCamera(){
+  unlockAudio();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ $("#photo").click(); return; }
-  cam.el.hidden = false; $("#camMsg").textContent = "Usmeri kamero v kodo na etiketi";
+  cam.el.hidden = false; camMsg("Usmeri kamero v kodo na etiketi"); cam.count = 0; $("#camCount").textContent = ""; cam.last = null;
+  try{ $("#camCont").checked = localStorage.getItem("kosmo.cont")==="1"; }catch(e){}
   try{
     cam.stream = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:"environment"}, width:{ideal:1280}, height:{ideal:720}}});
   }catch(err){
@@ -1219,28 +1386,45 @@ function stopCamera(){
   cam.video.srcObject = null;
 }
 const camCanvas = document.createElement("canvas");
+function camMsg(t,cls=""){ const m = $("#camMsg"); m.textContent = t; m.className = cls; }
+// del slike, ki je viden v okvirju (video je raztegnjen čez zaslon kot object-fit: cover)
+function aimRegion(){
+  const v = cam.video, vw = v.videoWidth, vh = v.videoHeight, vr = v.getBoundingClientRect(), ar = cam.el.querySelector(".aim").getBoundingClientRect();
+  const sc = Math.max(vr.width/vw, vr.height/vh), ox = (vr.width - vw*sc)/2, oy = (vr.height - vh*sc)/2;
+  let x = (ar.left - vr.left - ox)/sc, y = (ar.top - vr.top - oy)/sc, w = ar.width/sc, h = ar.height/sc;
+  x = Math.max(0,x); y = Math.max(0,y); w = Math.min(vw-x,w); h = Math.min(vh-y,h);
+  return {x,y,w,h};
+}
 async function scanLoop(){
   if (!cam.running) return;
-  if (!cam.busy && cam.video.readyState >= 2){
+  if (!cam.busy && cam.video.readyState >= 2 && cam.video.videoWidth){
     cam.busy = true;
     let text = null;
     try{
-      if (cam.detector){ const r = await cam.detector.detect(cam.video); if (r && r.length) text = r[0].rawValue; }
-      else if (hasZX){
-        const vw = cam.video.videoWidth, vh = cam.video.videoHeight, cw = Math.round(vw*.8), ch = Math.round(vh*.6);
-        const sc = Math.min(1, 1000/cw); camCanvas.width = Math.round(cw*sc); camCanvas.height = Math.round(ch*sc);
-        camCanvas.getContext("2d",{willReadFrequently:true}).drawImage(cam.video,(vw-cw)/2,(vh-ch)/2,cw,ch,0,0,camCanvas.width,camCanvas.height);
-        try{ text = zxDecode(camCanvas); }catch(e){}
-      }
+      const a = aimRegion(), sc = Math.min(1.5, 900/Math.max(a.w,1));
+      camCanvas.width = Math.max(1,Math.round(a.w*sc)); camCanvas.height = Math.max(1,Math.round(a.h*sc));
+      camCanvas.getContext("2d",{willReadFrequently:true}).drawImage(cam.video,a.x,a.y,a.w,a.h,0,0,camCanvas.width,camCanvas.height);
+      if (cam.detector){ const r = await cam.detector.detect(camCanvas); if (r && r.length) text = r[0].rawValue; }
+      else if (hasZX){ try{ text = zxDecode(camCanvas); }catch(e){} }
     }catch(e){}
     cam.busy = false;
     if (text){
-      try{ navigator.vibrate && navigator.vibrate(60); }catch(e){}
-      stopCamera(); handleCode(text,"Kamera"); return;
+      const cont = $("#camCont").checked, now = Date.now();
+      if (!cont){ stopCamera(); handleCode(text,"Kamera"); return; }
+      if (!(cam.last && cam.last.t===text && now-cam.last.at < 2500)){   // isto kodo preskočimo 2,5 s
+        cam.last = {t:text, at:now};
+        const r = handleCode(text,"Kamera",{quiet:true});
+        const aim = cam.el.querySelector(".aim"); aim.classList.toggle("hitflash", !!r.ok); setTimeout(()=>aim.classList.remove("hitflash"),500);
+        if (r.ok){ cam.count++; $("#camCount").textContent = `· ${cam.count}`;
+          camMsg(`✓ ${r.p.name} · ${r.p.element||""}${r.n>1?` (koda je na ${r.n} kosih)`:""}`,"ok"); }
+        else camMsg(`Koda ${norm(text)} ni v projektu`,"err");
+      } else cam.last.at = now;
     }
   }
   setTimeout(()=>requestAnimationFrame(scanLoop), cam.detector ? 60 : 140);
 }
+$("#camCont").addEventListener("change",e=>{ try{ localStorage.setItem("kosmo.cont", e.target.checked?"1":"0"); }catch(_){}
+  camMsg(e.target.checked ? "Skeniraj kos za kosom. Ko končaš, tapni Zapri." : "Usmeri kamero v kodo na etiketi"); });
 $("#scanBtn").addEventListener("click",startCamera);
 $("#camClose").addEventListener("click",stopCamera);
 $("#camPhoto").addEventListener("click",()=>{ stopCamera(); $("#photo").click(); });
@@ -1377,7 +1561,7 @@ $("#listhead-clear").addEventListener("click",e=>{ const b=e.currentTarget;
     }
     WS = m.workshop_id; showWsInfo(m.workshops, m.role);
     const sub = document.querySelector(".brand small"); if (sub) sub.textContent = m.workshops.name;
-    store.subscribe(()=>refreshProjects(), pid=>{ if (pid===current.id) loadScans(current); });
+    store.subscribe(()=>refreshProjects(), pid=>{ if (pid===current.id) loadScans(current); }, pid=>{ if (!pid || pid===current.id) loadRecuts(current); });
   }
   let last = null; try{ last = localStorage.getItem("kjejekos.last"); }catch(e){}
   await refreshProjects(last && last!=="demo" ? last : null);
