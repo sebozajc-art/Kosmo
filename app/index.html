@@ -107,7 +107,7 @@ header{position:absolute;inset:0 0 auto;z-index:2;display:flex;align-items:cente
 .pname{font-family:var(--f-display);font-weight:700;font-stretch:112%;font-size:26px;line-height:1.05;letter-spacing:-.01em;text-wrap:balance;margin:0}
 .pelem{color:var(--muted);font-weight:500;margin-top:6px;font-size:14px}
 .card-body{display:grid;grid-template-columns:172px 1fr;gap:18px;align-items:center}
-@media (max-width:360px){.card-body{grid-template-columns:1fr}}
+@media (max-width:480px){.card-body{grid-template-columns:1fr;gap:12px}.card-body .diagram{max-width:250px;margin:0 auto}.card-body .legend{justify-content:center}}
 .diagram{width:100%;height:auto;display:block;overflow:visible}
 .diagram text{font-family:var(--f-mono);font-weight:600;font-size:10.5px;fill:var(--ink)}
 .diagram .t{font-family:var(--f-body);font-size:9.5px;font-weight:600;fill:var(--faint)}
@@ -806,15 +806,20 @@ function renderList(){
 function selectEl(k){
   selected = null; selEl = k;
   renderCard(); renderList(); restyle(); flyToEl(k);
-  const g = document.querySelector(`.group[data-el="${CSS.escape(k)}"]`); g && g.scrollIntoView({block:"nearest"});
+  showCard();
+}
+// plošča se pomakne na kartico z merami (ne na vrstico v seznamu), da so podatki o kosu takoj vidni
+function showCard(){
+  const panel = document.querySelector(".panel"), card = $("#card"); if (!panel || !card) return;
+  const top = card.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - 12;
+  try{ panel.scrollTo({top: Math.max(0, top), behavior: "auto"}); }catch(e){ panel.scrollTop = Math.max(0, top); }
 }
 function select(p,{fly=true,mark=false}={}){
   selected = p; selEl = p ? elKey(p) : null;
   if (mark && p && !scannedSet().has(p.code)){ scannedSet().add(p.code); saveScan(p.code); }
   renderCard(); renderList(); restyle();
   if (p && fly && has3D) flyToEl(elKey(p), p);
-  const row = p && document.querySelector(`.row[data-i="${current.parts.indexOf(p)}"]`);
-  row && row.scrollIntoView({block:"nearest"});
+  if (p) showCard();
 }
 function setStatus(t,cls=""){ const s=$("#status"); s.textContent=t; s.className="status "+cls; }
 let toastT;
